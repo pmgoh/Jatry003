@@ -1,0 +1,62 @@
+// firestore.rules
+// Firebase 콘솔 → Firestore → 규칙 탭에 붙여넣기
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 헬퍼 함수 ──────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/config/admins).data.uids.hasAny([request.auth.uid]);
+    }
+    function isApprovedMember() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/members/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    // ── 학원 데이터 ────────────────────────────────────────
+    // 읽기: 승인된 회원 모두
+    // 쓰기: 관리자만
+    match /schools/{schoolId} {
+      allow read:  if isApprovedMember();
+      allow write: if isAdmin();
+    }
+
+    // ── 회원 데이터 ────────────────────────────────────────
+    // 자기 문서 생성: 누구나 (가입)
+    // 자기 문서 읽기: 본인 + 관리자
+    // status/role 변경: 관리자만
+    // 나머지 자기 정보 수정: 본인
+    match /members/{memberId} {
+      allow create: if isSignedIn() && request.auth.uid == memberId;
+      allow read:   if isSignedIn() && (request.auth.uid == memberId || isAdmin());
+      allow update: if isAdmin() ||
+        (isSignedIn() && request.auth.uid == memberId &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status','role']));
+      allow delete: if isAdmin();
+    }
+
+    // ── 견적 히스토리 ──────────────────────────────────────
+    // 생성: 승인된 회원 (본인 것만)
+    // 읽기/삭제: 본인 + 관리자
+    match /quotes/{quoteId} {
+      allow create: if isApprovedMember() &&
+        request.resource.data.memberId == request.auth.uid;
+      allow read, delete: if isSignedIn() &&
+        (resource.data.memberId == request.auth.uid || isAdmin());
+    }
+
+    // ── 설정 (관리자 UID 목록 등) ─────────────────────────
+    // 읽기: 로그인한 누구나 (관리자 확인 목적)
+    // 쓰기: 관리자만
+    match /config/{docId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+  }
+}

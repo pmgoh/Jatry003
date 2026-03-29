@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>로그인 — 유학원도우미</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --p: #2563eb; --p-light: #eff6ff; --radius: 16px; --shadow: 0 4px 24px rgba(0,0,0,.10); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%); font-family: 'Pretendard', -apple-system, sans-serif; color: #111827; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .wrap { width: 100%; max-width: 420px; }
+
+    .logo { text-align: center; margin-bottom: 32px; }
+    .logo-mark { font-size: 36px; margin-bottom: 6px; }
+    .logo-text { font-size: 22px; font-weight: 800; letter-spacing: -.03em; color: var(--p); }
+    .logo-sub { font-size: .84rem; color: #6b7280; margin-top: 4px; }
+
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #e5e7eb; }
+    .tab { padding: 16px; text-align: center; font-weight: 700; font-size: .9rem; cursor: pointer; color: #9ca3af; border-bottom: 2px solid transparent; transition: all .2s; background: none; border-left: none; border-right: none; border-top: none; }
+    .tab.active { color: var(--p); border-bottom-color: var(--p); }
+
+    .form-body { padding: 28px; }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; color: #374151; margin-bottom: 7px; }
+    .field input { width: 100%; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: .9rem; font-family: inherit; outline: none; transition: border-color .2s; }
+    .field input:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-main { width: 100%; padding: 13px; background: var(--p); color: #fff; border: none; border-radius: 10px; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .2s; margin-top: 6px; font-family: inherit; }
+    .btn-main:hover { opacity: .9; }
+    .btn-main:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* 구글 버튼 */
+    .btn-google { width: 100%; padding: 12px; background: #fff; color: #374151; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; }
+    .btn-google:hover { border-color: #9ca3af; background: #f9fafb; }
+    .btn-google:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .divider-or { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #9ca3af; font-size: .82rem; font-weight: 600; }
+    .divider-or::before, .divider-or::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
+
+    .err { color: #dc2626; font-size: .82rem; margin-top: 8px; font-weight: 500; display: none; }
+    .hint { font-size: .8rem; color: #9ca3af; margin-top: 6px; }
+
+    /* 승인 대기 */
+    .pending-view { text-align: center; padding: 40px 28px; display: none; }
+    .pending-icon { font-size: 48px; margin-bottom: 16px; }
+    .pending-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+    .pending-desc { color: #6b7280; font-size: .88rem; line-height: 1.6; }
+    .pending-email { display: inline-block; margin-top: 16px; background: #f3f4f6; border-radius: 8px; padding: 4px 12px; font-size: .84rem; font-weight: 600; }
+    .btn-outline { width: 100%; padding: 11px; background: transparent; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: .88rem; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: inherit; color: #374151; }
+
+    /* 구글 가입 완료 모달 */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: var(--radius); width: 100%; max-width: 420px; padding: 28px; }
+    .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+    .modal-sub { font-size: .84rem; color: #6b7280; margin-bottom: 20px; }
+    .modal .field { margin-bottom: 14px; }
+
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    .spinner-dark { border-color: rgba(0,0,0,.15) !important; border-top-color: #374151 !important; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-mark">🏫</div>
+    <div class="logo-text">유학원도우미</div>
+    <div class="logo-sub">필리핀 어학원 학비 비교 &amp; 견적 도우미</div>
+  </div>
+
+  <div class="card">
+
+    <!-- 승인 대기 -->
+    <div class="pending-view" id="pendingView">
+      <div class="pending-icon">⏳</div>
+      <div class="pending-title">승인 대기 중</div>
+      <div class="pending-desc">가입 신청이 접수되었습니다.<br>관리자 승인 후 서비스를 이용하실 수 있습니다.<br>보통 1~2 영업일 내에 처리됩니다.</div>
+      <div class="pending-email" id="pendingEmail"></div>
+      <button class="btn-outline" id="btnLogoutPending">로그아웃</button>
+    </div>
+
+    <!-- 로그인 / 가입 탭 -->
+    <div id="authView">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin" onclick="switchTab('login')">로그인</button>
+        <button class="tab" id="tabSignup" onclick="switchTab('signup')">회원가입</button>
+      </div>
+
+      <!-- 로그인 폼 -->
+      <div class="form-body" id="loginForm">
+        <!-- 구글 로그인 -->
+        <button class="btn-google" id="btnGoogleLogin">
+          <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+          Google로 로그인
+        </button>
+
+        <div class="divider-or">또는</div>
+
+        <div class="field">
+          <label>이메일</label>
+          <input id="loginEmail" type="email" placeholder="company@example.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>비밀번호</label>
+          <input id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+        </div>
+        <div class="err" id="loginErr"></div>
+        <button class="btn-main" id="btnLogin">이메일로 로그인</button>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <div class="form-body hidden" id="signupForm">
+        <!-- 구글로 가입 -->
+        <button class="btn-google" id="btnGoogleSignup">
+          <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+          Google로 빠르게 가입
+        </button>
+
+        <div class="divider-or">또는 이메일로 가입</div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>이메일 <span style="color:#dc2626">*</span></label>
+            <input id="signupEmail" type="email" placeholder="이메일">
+          </div>
+          <div class="field">
+            <label>비밀번호 <span style="color:#dc2626">*</span></label>
+            <input id="signupPw" type="password" placeholder="8자 이상">
+          </div>
+        </div>
+        <div class="field">
+          <label>유학원/회사명 <span style="color:#dc2626">*</span></label>
+          <input id="signupCompany" type="text" placeholder="예: 필리핀유학센터">
+        </div>
+        <div class="field">
+          <label>슬로건 / 한줄 소개</label>
+          <input id="signupSlogan" type="text" placeholder="예: 필리핀 유학 전문 10년">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>담당자 이름 <span style="color:#dc2626">*</span></label>
+            <input id="signupName" type="text" placeholder="홍길동">
+          </div>
+          <div class="field">
+            <label>연락처 <span style="color:#dc2626">*</span></label>
+            <input id="signupPhone" type="tel" placeholder="010-0000-0000">
+          </div>
+        </div>
+        <div class="hint">가입 후 관리자 승인을 받아야 서비스를 이용할 수 있습니다.</div>
+        <div class="err" id="signupErr"></div>
+        <button class="btn-main" id="btnSignup">이메일로 가입 신청</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 구글 가입 후 추가정보 입력 모달 -->
+<div class="modal-overlay" id="googleInfoModal">
+  <div class="modal">
+    <div class="modal-title">추가 정보 입력</div>
+    <div class="modal-sub">서비스 이용을 위해 유학원 정보를 입력해주세요.</div>
+    <div class="field">
+      <label>유학원/회사명 <span style="color:#dc2626">*</span></label>
+      <input id="gCompany" type="text" placeholder="예: 필리핀유학센터">
+    </div>
+    <div class="field">
+      <label>슬로건 / 한줄 소개</label>
+      <input id="gSlogan" type="text" placeholder="예: 필리핀 유학 전문 10년">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>담당자 이름 <span style="color:#dc2626">*</span></label>
+        <input id="gName" type="text" placeholder="홍길동">
+      </div>
+      <div class="field">
+        <label>연락처 <span style="color:#dc2626">*</span></label>
+        <input id="gPhone" type="tel" placeholder="010-0000-0000">
+      </div>
+    </div>
+    <div class="err" id="googleInfoErr"></div>
+    <button class="btn-main" id="btnSaveGoogleInfo" style="margin-top:8px;">가입 신청 완료</button>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+         signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+let pendingGoogleUser = null; // 구글 로그인 후 추가정보 대기 중인 유저
+
+function setLoading(btn, loading, text, dark = false) {
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? `<span class="spinner${dark ? ' spinner-dark' : ''}"></span>${text}`
+    : text;
+}
+function showErr(id, msg) { const el=$(id); el.textContent=msg; el.style.display=msg?"block":"none"; }
+
+// ── 탭 전환 ──
+window.switchTab = (tab) => {
+  $("loginForm").classList.toggle("hidden",  tab !== "login");
+  $("signupForm").classList.toggle("hidden", tab !== "signup");
+  $("tabLogin").classList.toggle("active",  tab === "login");
+  $("tabSignup").classList.toggle("active", tab === "signup");
+};
+
+// ── 로그인 후 라우팅 ──
+async function routeAfterLogin(user) {
+  const snap = await getDoc(doc(db, "members", user.uid));
+  if (!snap.exists()) {
+    // 구글 로그인인데 Firestore 문서 없음 → 추가정보 입력 모달
+    pendingGoogleUser = user;
+    $("gName").value  = user.displayName || "";
+    $("googleInfoModal").classList.add("open");
+    return;
+  }
+  const member = snap.data();
+  if (member.status === "approved") {
+    const admSnap = await getDoc(doc(db, "config", "admins"));
+    const adminUids = admSnap.exists() ? (admSnap.data().uids || []) : [];
+    window.location.href = adminUids.includes(user.uid) ? "admin.html" : "dashboard.html";
+  } else {
+    $("authView").style.display = "none";
+    $("pendingView").style.display = "block";
+    $("pendingEmail").textContent = user.email || user.displayName || "";
+  }
+}
+
+// ── 인증 상태 감시 ──
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  if (pendingGoogleUser) return; // 모달 입력 중이면 무시
+  await routeAfterLogin(user);
+});
+
+// ── 구글 로그인/가입 공통 함수 ──
+async function googleAuth(btn, label) {
+  showErr("loginErr", ""); showErr("signupErr", "");
+  setLoading(btn, true, label, true);
+  try {
+    const provider = new GoogleAuthProvider();
+    const cred = await signInWithPopup(auth, provider);
+    // onAuthStateChanged가 처리 (routeAfterLogin)
+  } catch(e) {
+    if (e.code !== "auth/popup-closed-by-user") {
+      showErr("loginErr", "구글 로그인에 실패했습니다."); showErr("signupErr", "구글 로그인에 실패했습니다.");
+    }
+  } finally {
+    btn.innerHTML = btn.id === "btnGoogleLogin"
+      ? `<svg viewBox="0 0 48 48" style="width:20px;height:20px;flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인`
+      : `<svg viewBox="0 0 48 48" style="width:20px;height:20px;flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 빠르게 가입`;
+    btn.disabled = false;
+  }
+}
+
+$("btnGoogleLogin").addEventListener("click",  () => googleAuth($("btnGoogleLogin"),  "연결 중…"));
+$("btnGoogleSignup").addEventListener("click", () => googleAuth($("btnGoogleSignup"), "연결 중…"));
+
+// ── 구글 가입 추가정보 저장 ──
+$("btnSaveGoogleInfo").addEventListener("click", async () => {
+  showErr("googleInfoErr", "");
+  const company = $("gCompany").value.trim();
+  const name    = $("gName").value.trim();
+  const phone   = $("gPhone").value.trim();
+  if (!company || !name || !phone) { showErr("googleInfoErr", "필수 항목을 모두 입력해주세요."); return; }
+  setLoading($("btnSaveGoogleInfo"), true, "저장 중…");
+  try {
+    const user = pendingGoogleUser;
+    await setDoc(doc(db, "members", user.uid), {
+      uid: user.uid,
+      email: user.email || "",
+      companyName:     company,
+      slogan:          $("gSlogan").value.trim(),
+      consultantName:  name,
+      consultantPhone: phone,
+      primaryColor:    "#2563eb",
+      logoUrl:         user.photoURL || "",
+      status:          "pending",
+      createdAt:       serverTimestamp(),
+      loginMethod:     "google",
+    });
+    pendingGoogleUser = null;
+    $("googleInfoModal").classList.remove("open");
+    $("authView").style.display = "none";
+    $("pendingView").style.display = "block";
+    $("pendingEmail").textContent = user.email || user.displayName || "";
+  } catch(e) {
+    showErr("googleInfoErr", "저장에 실패했습니다: " + e.message);
+    setLoading($("btnSaveGoogleInfo"), false, "가입 신청 완료");
+  }
+});
+
+// ── 이메일 로그인 ──
+$("btnLogin").addEventListener("click", async () => {
+  showErr("loginErr", "");
+  setLoading($("btnLogin"), true, "로그인 중…");
+  try {
+    await signInWithEmailAndPassword(auth, $("loginEmail").value.trim(), $("loginPw").value);
+  } catch(e) {
+    showErr("loginErr", "이메일 또는 비밀번호가 올바르지 않습니다.");
+    setLoading($("btnLogin"), false, "이메일로 로그인");
+  }
+});
+$("loginPw").addEventListener("keydown", e => { if(e.key === "Enter") $("btnLogin").click(); });
+
+// ── 이메일 회원가입 ──
+$("btnSignup").addEventListener("click", async () => {
+  showErr("signupErr", "");
+  const email   = $("signupEmail").value.trim();
+  const pw      = $("signupPw").value;
+  const company = $("signupCompany").value.trim();
+  const name    = $("signupName").value.trim();
+  const phone   = $("signupPhone").value.trim();
+  if (!email || !pw || !company || !name || !phone) { showErr("signupErr", "필수 항목을 모두 입력해주세요."); return; }
+  if (pw.length < 8) { showErr("signupErr", "비밀번호는 8자 이상이어야 합니다."); return; }
+  setLoading($("btnSignup"), true, "신청 중…");
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    await setDoc(doc(db, "members", cred.user.uid), {
+      uid: cred.user.uid, email,
+      companyName:     company,
+      slogan:          $("signupSlogan").value.trim(),
+      consultantName:  name,
+      consultantPhone: phone,
+      primaryColor:    "#2563eb",
+      logoUrl:         "",
+      status:          "pending",
+      createdAt:       serverTimestamp(),
+      loginMethod:     "email",
+    });
+  } catch(e) {
+    showErr("signupErr", e.code === "auth/email-already-in-use" ? "이미 사용 중인 이메일입니다." : e.message);
+    setLoading($("btnSignup"), false, "이메일로 가입 신청");
+  }
+});
+
+$("btnLogoutPending").addEventListener("click", () => { pendingGoogleUser = null; signOut(auth); });
+</script>
+</body>
+</html>

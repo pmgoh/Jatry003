@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>대시보드 — 유학원도우미</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --p: #2563eb; --p-light: #eff6ff; --p-dark: #1d4ed8;
+      --bg: #f0f2f7; --surface: #fff; --border: #e8eaed; --muted: #6b7280;
+      --radius: 16px; --radius-sm: 10px; --shadow: 0 1px 12px rgba(0,0,0,.07);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); font-family: 'Pretendard', -apple-system, sans-serif; color: #111827; min-height: 100vh; }
+
+    /* ── 레이아웃 ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── 사이드바 ── */
+    .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 16px; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 4px 8px; margin-bottom: 28px; }
+    .sidebar-logo-icon { font-size: 24px; }
+    .sidebar-logo-text { font-size: 1rem; font-weight: 800; letter-spacing: -.02em; color: var(--p); }
+    .nav-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 0 8px; margin-bottom: 6px; margin-top: 16px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: .9rem; font-weight: 600; color: #374151; text-decoration: none; transition: all .15s; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+    .nav-item:hover { background: var(--p-light); color: var(--p); }
+    .nav-item.active { background: var(--p-light); color: var(--p); }
+    .nav-item .icon { width: 20px; text-align: center; font-size: 16px; }
+    .sidebar-bottom { margin-top: auto; }
+    .user-card { padding: 12px; background: var(--bg); border-radius: var(--radius-sm); }
+    .user-name { font-weight: 700; font-size: .88rem; }
+    .user-email { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+    .btn-logout { margin-top: 10px; width: 100%; padding: 8px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--muted); transition: all .15s; }
+    .btn-logout:hover { border-color: #dc2626; color: #dc2626; }
+
+    /* ── 메인 ── */
+    .main { margin-left: 240px; flex: 1; padding: 32px; max-width: calc(100vw - 240px); }
+
+    /* ── 브랜딩 헤더 ── */
+    .brand-header { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 28px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; }
+    .brand-logo-wrap { width: 64px; height: 64px; border-radius: var(--radius-sm); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); flex-shrink: 0; }
+    .brand-logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-logo-placeholder { font-size: 28px; }
+    .brand-info { flex: 1; }
+    .brand-company { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; }
+    .brand-slogan { color: var(--muted); font-size: .88rem; margin-top: 3px; }
+    .brand-consultant { font-size: .84rem; margin-top: 6px; color: #374151; }
+    .color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(0,0,0,.1); flex-shrink: 0; }
+    .btn-setting { padding: 8px 18px; border-radius: 8px; border: 1.5px solid var(--border); background: none; font-size: .84rem; font-weight: 600; cursor: pointer; font-family: inherit; color: #374151; transition: all .15s; }
+    .btn-setting:hover { border-color: var(--p); color: var(--p); }
+
+    /* ── 통계 카드 ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+    .stat-label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+    .stat-value { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; margin-top: 4px; color: var(--p); }
+    .stat-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── 빠른 액션 ── */
+    .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .action-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s; border: 2px solid transparent; }
+    .action-card:hover { box-shadow: 0 4px 24px rgba(37,99,235,.15); border-color: var(--p); transform: translateY(-1px); }
+    .action-icon { font-size: 28px; width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--p-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .action-title { font-weight: 700; font-size: .95rem; }
+    .action-desc { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── 견적 히스토리 ── */
+    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+    .history-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th { background: #f9fafb; padding: 12px 16px; text-align: left; font-size: .8rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+    .history-table td { padding: 14px 16px; font-size: .88rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table tr:hover td { background: #fafbfc; }
+    .school-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .school-tag { font-size: .75rem; padding: 2px 8px; border-radius: 20px; background: var(--p-light); color: var(--p); font-weight: 600; }
+    .btn-sm { padding: 5px 12px; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; font-family: inherit; border: 1.5px solid var(--border); background: none; color: #374151; transition: all .15s; }
+    .btn-sm:hover { border-color: var(--p); color: var(--p); }
+    .btn-sm.danger:hover { border-color: #dc2626; color: #dc2626; }
+    .empty-state { padding: 48px; text-align: center; color: var(--muted); }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-text { font-size: .9rem; }
+
+    /* ── 설정 모달 ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; display: none; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 1.1rem; font-weight: 800; }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 0; line-height: 1; }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; color: #374151; margin-bottom: 7px; }
+    .field input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .9rem; font-family: inherit; outline: none; transition: border-color .2s; }
+    .field input:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .color-picker-wrap { display: flex; align-items: center; gap: 12px; }
+    .color-preview { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border); }
+    .field input[type="color"] { width: 40px; height: 40px; padding: 2px; border-radius: 10px; cursor: pointer; }
+    .logo-preview { width: 80px; height: 80px; border-radius: var(--radius-sm); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); margin-top: 8px; }
+    .logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .btn-primary { padding: 10px 24px; background: var(--p); color: #fff; border: none; border-radius: 8px; font-size: .9rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-secondary { padding: 10px 24px; background: none; border: 1.5px solid var(--border); color: #374151; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+    /* ── 스피너 ── */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 4px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; max-width: 100%; padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── 사이드바 ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">🏫</span>
+      <span class="sidebar-logo-text">유학원도우미</span>
+    </div>
+    <div class="nav-label">메뉴</div>
+    <a class="nav-item active" href="dashboard.html"><span class="icon">🏠</span> 대시보드</a>
+    <a class="nav-item" href="calculator.html"><span class="icon">🧮</span> 학비계산기</a>
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-name" id="sidebarName">—</div>
+        <div class="user-email" id="sidebarEmail">—</div>
+      </div>
+      <button class="btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- ── 메인 ── -->
+  <main class="main">
+
+    <!-- 브랜딩 헤더 -->
+    <div class="brand-header">
+      <div class="brand-logo-wrap" id="brandLogoWrap">
+        <span class="brand-logo-placeholder">🏢</span>
+      </div>
+      <div class="brand-info">
+        <div class="brand-company" id="brandCompany">회사명</div>
+        <div class="brand-slogan" id="brandSlogan">슬로건</div>
+        <div class="brand-consultant" id="brandConsultant">담당자</div>
+      </div>
+      <div class="color-swatch" id="colorSwatch"></div>
+      <button class="btn-setting" id="btnOpenSettings">⚙️ 브랜딩 설정</button>
+    </div>
+
+    <!-- 통계 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">전체 견적</div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-sub">누적 견적 수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">이번 달</div>
+        <div class="stat-value" id="statMonth">—</div>
+        <div class="stat-sub">월간 견적 수</div>
+      </div>
+    </div>
+
+    <!-- 빠른 액션 -->
+    <div class="quick-actions">
+      <a class="action-card" href="calculator.html">
+        <div class="action-icon">🧮</div>
+        <div>
+          <div class="action-title">학비 계산하기</div>
+          <div class="action-desc">학원·코스·기숙사 조건 설정</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- 견적 히스토리 -->
+    <div class="section-title">최근 견적 히스토리</div>
+    <div class="history-card">
+      <div id="historyContent">
+        <div class="empty-state">
+          <div class="spinner" style="width:24px;height:24px;border-color:#e5e7eb;border-top-color:#2563eb;"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── 브랜딩 설정 모달 ── -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">브랜딩 설정</div>
+      <button class="modal-close" id="btnCloseSettings">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>유학원/회사명</label>
+        <input id="setCompany" type="text" placeholder="필리핀유학센터">
+      </div>
+      <div class="field">
+        <label>슬로건 / 한줄 소개</label>
+        <input id="setSlogan" type="text" placeholder="필리핀 유학 전문 10년">
+      </div>
+      <div class="field">
+        <label>담당 상담사 이름</label>
+        <input id="setConsultantName" type="text" placeholder="홍길동">
+      </div>
+      <div class="field">
+        <label>상담사 연락처</label>
+        <input id="setConsultantPhone" type="tel" placeholder="010-0000-0000">
+      </div>
+      <div class="field">
+        <label>메인 컬러</label>
+        <div class="color-picker-wrap">
+          <input id="setColor" type="color" value="#2563eb">
+          <div class="color-preview" id="colorPreview" style="background:#2563eb;"></div>
+          <span id="colorHex" style="font-size:.84rem;font-weight:600;">#2563eb</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>로고 이미지 URL <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
+        <input id="setLogoUrl" type="url" placeholder="https://...">
+        <div class="logo-preview" id="logoPreview">
+          <span style="font-size:24px;">🏢</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="btnCancelSettings">취소</button>
+      <button class="btn-primary" id="btnSaveSettings">저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="_shared.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+let currentUser = null;
+let memberData  = null;
+
+// ── 인증 가드 ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "auth.html"; return; }
+  currentUser = user;
+  const snap = await getDoc(doc(db, "members", user.uid));
+  if (!snap.exists() || snap.data().status !== "approved") { window.location.href = "auth.html"; return; }
+  memberData = snap.data();
+  applyBranding(memberData);
+  renderBrandHeader();
+  renderSidebar();
+  loadHistory();
+});
+
+function applyBranding(m) {
+  if (m?.primaryColor) document.documentElement.style.setProperty("--p", m.primaryColor);
+}
+
+function renderBrandHeader() {
+  const m = memberData;
+  $("brandCompany").textContent = m.companyName || "—";
+  $("brandSlogan").textContent  = m.slogan || "";
+  $("brandConsultant").textContent = `${m.consultantName || ""}  ${m.consultantPhone || ""}`;
+  $("colorSwatch").style.background = m.primaryColor || "#2563eb";
+  if (m.logoUrl) {
+    $("brandLogoWrap").innerHTML = `<img src="${m.logoUrl}" alt="로고">`;
+  }
+}
+
+function renderSidebar() {
+  $("sidebarName").textContent  = memberData?.companyName || "—";
+  $("sidebarEmail").textContent = currentUser?.email || "—";
+}
+
+// ── 히스토리 로드 ──
+async function loadHistory() {
+  try {
+    const q = query(
+      collection(db, "quotes"),
+      where("memberId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+    const quotes = [];
+    snap.forEach(d => quotes.push({ id: d.id, ...d.data() }));
+
+    // 통계
+    const now = new Date();
+    const thisMonth = quotes.filter(q => {
+      const d = q.createdAt?.toDate?.() || new Date(q.createdAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    $("statTotal").textContent = quotes.length;
+    $("statMonth").textContent = thisMonth.length;
+
+    if (!quotes.length) {
+      $("historyContent").innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">아직 견적 히스토리가 없어요.<br>학비계산기에서 비교표를 만들어보세요!</div>
+        </div>`;
+      return;
+    }
+
+    const rows = quotes.map(q => {
+      const schools = (q.compares || []).map(c => `<span class="school-tag">${c.schoolName}</span>`).join("");
+      const date = fmtDate(q.createdAt);
+      return `<tr>
+        <td>${date}</td>
+        <td><div class="school-tags">${schools || "—"}</div></td>
+        <td>${(q.compares || []).length}개 비교</td>
+        <td style="text-align:right;">
+          <button class="btn-sm danger" onclick="deleteQuote('${q.id}')">삭제</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    $("historyContent").innerHTML = `
+      <table class="history-table">
+        <thead><tr><th>날짜</th><th>학원</th><th>비교 수</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch(e) {
+    $("historyContent").innerHTML = `<div class="empty-state"><div class="empty-text">히스토리 로드 실패</div></div>`;
+  }
+}
+
+window.deleteQuote = async (id) => {
+  if (!confirm("이 견적을 삭제하시겠습니까?")) return;
+  await deleteDoc(doc(db, "quotes", id));
+  showToast("삭제되었습니다.");
+  loadHistory();
+};
+
+// ── 설정 모달 ──
+$("btnOpenSettings").addEventListener("click", () => {
+  const m = memberData;
+  $("setCompany").value = m.companyName || "";
+  $("setSlogan").value  = m.slogan || "";
+  $("setConsultantName").value  = m.consultantName || "";
+  $("setConsultantPhone").value = m.consultantPhone || "";
+  $("setColor").value   = m.primaryColor || "#2563eb";
+  $("colorPreview").style.background = m.primaryColor || "#2563eb";
+  $("colorHex").textContent = m.primaryColor || "#2563eb";
+  $("setLogoUrl").value = m.logoUrl || "";
+  updateLogoPreview(m.logoUrl);
+  $("settingsModal").classList.add("open");
+});
+[$("btnCloseSettings"), $("btnCancelSettings")].forEach(b => b.addEventListener("click", () => $("settingsModal").classList.remove("open")));
+
+$("setColor").addEventListener("input", e => {
+  $("colorPreview").style.background = e.target.value;
+  $("colorHex").textContent = e.target.value;
+});
+$("setLogoUrl").addEventListener("input", e => updateLogoPreview(e.target.value));
+
+function updateLogoPreview(url) {
+  $("logoPreview").innerHTML = url
+    ? `<img src="${url}" alt="로고" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">`
+    : `<span style="font-size:24px;">🏢</span>`;
+}
+
+$("btnSaveSettings").addEventListener("click", async () => {
+  const updates = {
+    companyName:     $("setCompany").value.trim(),
+    slogan:          $("setSlogan").value.trim(),
+    consultantName:  $("setConsultantName").value.trim(),
+    consultantPhone: $("setConsultantPhone").value.trim(),
+    primaryColor:    $("setColor").value,
+    logoUrl:         $("setLogoUrl").value.trim(),
+  };
+  try {
+    await updateDoc(doc(db, "members", currentUser.uid), updates);
+    memberData = { ...memberData, ...updates };
+    applyBranding(memberData);
+    renderBrandHeader();
+    $("settingsModal").classList.remove("open");
+    showToast("설정이 저장되었습니다 ✓");
+  } catch(e) { showToast("저장 실패: " + e.message, "error"); }
+});
+
+$("btnLogout").addEventListener("click", () => signOut(auth).then(() => window.location.href = "auth.html"));
+</script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>슈퍼관리자 — 유학원도우미</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --p: #2563eb; --p-light: #eff6ff; --p-dark: #1d4ed8;
+      --bg: #f0f2f7; --surface: #fff; --border: #e8eaed; --muted: #6b7280;
+      --radius: 16px; --radius-sm: 10px; --shadow: 0 1px 12px rgba(0,0,0,.07);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); font-family: 'Pretendard', -apple-system, sans-serif; color: #111827; min-height: 100vh; }
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── 사이드바 ── */
+    .sidebar { width: 220px; background: #111827; display: flex; flex-direction: column; padding: 20px 12px; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { padding: 8px 12px; margin-bottom: 24px; }
+    .sidebar-logo-text { font-size: 1rem; font-weight: 800; color: #f9fafb; letter-spacing: -.02em; }
+    .sidebar-badge { font-size: .7rem; font-weight: 700; background: #dc2626; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+    .nav-label { font-size: .7rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .08em; padding: 0 12px; margin-bottom: 6px; margin-top: 16px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: .88rem; font-weight: 600; color: #9ca3af; text-decoration: none; transition: all .15s; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+    .nav-item:hover { background: rgba(255,255,255,.08); color: #f9fafb; }
+    .nav-item.active { background: rgba(37,99,235,.3); color: #93c5fd; }
+    .nav-badge { background: #dc2626; color: #fff; font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+    .sidebar-bottom { margin-top: auto; }
+    .btn-logout { width: 100%; padding: 9px 12px; border: 1px solid rgba(255,255,255,.15); border-radius: var(--radius-sm); background: none; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: #9ca3af; transition: all .15s; }
+    .btn-logout:hover { background: rgba(255,255,255,.08); color: #f9fafb; }
+
+    /* ── 메인 ── */
+    .main { margin-left: 220px; flex: 1; padding: 28px; }
+    .page-header { margin-bottom: 24px; }
+    .page-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; }
+    .page-sub { color: var(--muted); font-size: .88rem; margin-top: 4px; }
+
+    /* ── 패널들 ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── 학원 그리드 ── */
+    .top-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .school-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+    /* ── 학원 카드 ── */
+    .school-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; cursor: pointer; transition: all .2s; border: 2px solid transparent; }
+    .school-card:hover { border-color: var(--p); box-shadow: 0 4px 20px rgba(37,99,235,.15); transform: translateY(-2px); }
+    .school-card-code { font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: var(--p-light); color: var(--p); display: inline-block; margin-bottom: 10px; }
+    .school-card-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+    .school-card-meta { display: flex; gap: 12px; font-size: .8rem; color: var(--muted); }
+    .school-card-meta span { display: flex; align-items: center; gap: 4px; }
+
+    /* ── 슬라이드 패널 (편집기) ── */
+    .slide-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 200; display: none; }
+    .slide-overlay.open { display: block; }
+    .slide-panel { position: fixed; right: 0; top: 0; height: 100vh; width: min(740px, 100vw); background: var(--surface); box-shadow: -8px 0 40px rgba(0,0,0,.15); z-index: 201; transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; }
+    .slide-panel.open { transform: translateX(0); }
+    .slide-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    .slide-header-icon { width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--p-light); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .slide-header-title { font-size: 1.1rem; font-weight: 800; flex: 1; }
+    .slide-header-actions { display: flex; gap: 8px; }
+    .slide-body { flex: 1; overflow-y: auto; padding: 0; }
+    .slide-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: var(--surface); }
+
+    /* ── 탭 ── */
+    .tab-nav { display: flex; gap: 2px; padding: 16px 24px 0; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
+    .tab-btn { padding: 10px 18px; border: none; background: none; font-size: .88rem; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; font-family: inherit; transition: all .15s; }
+    .tab-btn.active { color: var(--p); border-bottom-color: var(--p); }
+    .tab-content { padding: 24px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── 폼 ── */
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; color: #374151; margin-bottom: 7px; }
+    .field-row { display: grid; gap: 14px; }
+    .field-row-2 { grid-template-columns: 1fr 1fr; }
+    .field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-row-5 { grid-template-columns: 2fr 1fr 1fr 1fr 1.4fr; }
+    .form-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .9rem; font-family: inherit; outline: none; transition: border-color .2s; }
+    .form-input:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .form-select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .9rem; font-family: inherit; outline: none; background: #fff; }
+    .form-input.mono { font-variant-numeric: tabular-nums; }
+    .hint { font-size: .78rem; color: var(--muted); margin-top: 5px; }
+
+    /* ── 아이템 리스트 (코스/기숙사) ── */
+    .item-list { display: flex; flex-direction: column; gap: 10px; }
+    .item-row { background: #f9fafb; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+    .item-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .item-row-name { font-weight: 700; font-size: .9rem; color: #374151; }
+    .item-row-prices { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+    .price-field { }
+    .price-label { font-size: .74rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .add-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border: 2px dashed #d1d5db; border-radius: var(--radius-sm); background: none; width: 100%; cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--muted); font-family: inherit; transition: all .2s; }
+    .add-btn:hover { border-color: var(--p); color: var(--p); background: var(--p-light); }
+    .del-btn { width: 28px; height: 28px; border-radius: 6px; border: 1.5px solid #fecaca; background: #fef2f2; color: #dc2626; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
+
+    /* ── 현지납부 그리드 ── */
+    .fee-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── 할인 섹션 ── */
+    .disc-section { margin-bottom: 20px; }
+    .disc-section-title { font-size: .88rem; font-weight: 700; color: #374151; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .disc-rule { background: #f9fafb; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px; }
+
+    /* ── 버튼 ── */
+    .btn-primary { padding: 10px 24px; background: var(--p); color: #fff; border: none; border-radius: var(--radius-sm); font-size: .9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-secondary { padding: 10px 20px; background: none; border: 1.5px solid var(--border); color: #374151; border-radius: var(--radius-sm); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-secondary:hover { border-color: #9ca3af; }
+    .btn-danger { padding: 9px 18px; background: none; border: 1.5px solid #fecaca; color: #dc2626; border-radius: var(--radius-sm); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+    /* ── 회원 테이블 ── */
+    .member-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .member-table th { background: #f9fafb; padding: 12px 16px; text-align: left; font-size: .8rem; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); }
+    .member-table td { padding: 14px 16px; font-size: .88rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .member-table tr:last-child td { border-bottom: none; }
+    .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+    .status-badge.pending  { background: #fef3c7; color: #92400e; }
+    .status-badge.approved { background: #dcfce7; color: #166534; }
+    .status-badge.rejected { background: #fee2e2; color: #991b1b; }
+    .btn-approve { padding: 5px 12px; background: #dcfce7; color: #166534; border: none; border-radius: 6px; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-reject  { padding: 5px 12px; background: #fee2e2; color: #991b1b; border: none; border-radius: 6px; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 6px; }
+    .mono { font-variant-numeric: tabular-nums; }
+
+    /* ── 스피너 ── */
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--p); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state { display: flex; align-items: center; justify-content: center; padding: 60px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── 사이드바 ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-text">🏫 유학원도우미<span class="sidebar-badge">ADMIN</span></span>
+    </div>
+    <div class="nav-label">관리</div>
+    <button class="nav-item active" onclick="showPanel('schools')">🏫 학원 관리</button>
+    <button class="nav-item" onclick="showPanel('members')">👥 회원 관리 <span class="nav-badge" id="pendingBadge" style="display:none;">0</span></button>
+    <button class="nav-item" onclick="showPanel('admins')">🔑 관리자 설정</button>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- ── 메인 ── -->
+  <main class="main">
+
+    <!-- ── 학원 패널 ── -->
+    <div class="panel active" id="panel-schools">
+      <div class="page-header">
+        <div class="page-title">학원 관리</div>
+        <div class="page-sub">학원별 코스·기숙사·현지납부·할인 정책을 관리합니다</div>
+      </div>
+      <div class="top-actions">
+        <span id="schoolCount" style="font-size:.88rem;color:var(--muted);"></span>
+        <button class="btn-primary" onclick="openSchoolEditor(null)">+ 학원 추가</button>
+      </div>
+      <div id="schoolGrid" class="school-grid">
+        <div class="loading-state"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ── 회원 패널 ── -->
+    <div class="panel" id="panel-members">
+      <div class="page-header">
+        <div class="page-title">회원 관리</div>
+        <div class="page-sub">가입 신청 승인 및 회원 상태를 관리합니다</div>
+      </div>
+      <div id="membersContent">
+        <div class="loading-state"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ── 관리자 패널 ── -->
+    <div class="panel" id="panel-admins">
+      <div class="page-header">
+        <div class="page-title">관리자 설정</div>
+        <div class="page-sub">슈퍼관리자 권한을 가진 UID 목록을 관리합니다</div>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;max-width:560px;">
+        <div class="field">
+          <label>관리자 UID 목록</label>
+          <textarea id="adminUids" rows="6" class="form-input" placeholder="UID를 한 줄에 하나씩 입력"></textarea>
+          <div class="hint">Firebase Auth → 사용자 탭에서 UID를 확인할 수 있습니다.</div>
+        </div>
+        <button class="btn-primary" id="btnSaveAdmins">저장</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── 학원 편집 슬라이드 패널 ── -->
+<div class="slide-overlay" id="slideOverlay" onclick="closeSchoolEditor()"></div>
+<div class="slide-panel" id="slidePanel">
+  <div class="slide-header">
+    <div class="slide-header-icon">🏫</div>
+    <div class="slide-header-title" id="slidePanelTitle">학원 편집</div>
+    <div class="slide-header-actions">
+      <button class="btn-danger" id="btnDeleteSchool">삭제</button>
+      <button class="btn-secondary" onclick="closeSchoolEditor()">닫기</button>
+      <button class="btn-primary" id="btnSaveSchool">저장</button>
+    </div>
+  </div>
+
+  <div class="tab-nav" id="editorTabNav">
+    <button class="tab-btn active" data-tab="basic">기본정보</button>
+    <button class="tab-btn" data-tab="courses">코스</button>
+    <button class="tab-btn" data-tab="dorms">기숙사</button>
+    <button class="tab-btn" data-tab="fees">현지납부</button>
+    <button class="tab-btn" data-tab="discounts">할인정책</button>
+  </div>
+
+  <div class="slide-body">
+    <div class="tab-content">
+
+      <!-- 기본정보 -->
+      <div class="tab-pane active" id="tab-basic">
+        <div class="field-row field-row-2">
+          <div class="field">
+            <label>학원코드 <span style="color:#dc2626">*</span></label>
+            <input id="fCode" class="form-input" placeholder="PH_CEBU_XXX" style="text-transform:uppercase;">
+            <div class="hint">영문·숫자·언더스코어, 저장 후 변경 불가</div>
+          </div>
+          <div class="field">
+            <label>입학금 (원)</label>
+            <input id="fAdmission" type="number" class="form-input mono" placeholder="120000" min="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>학원명 <span style="color:#dc2626">*</span></label>
+          <input id="fName" class="form-input" placeholder="학원 이름 (한글/영문)">
+        </div>
+      </div>
+
+      <!-- 코스 -->
+      <div class="tab-pane" id="tab-courses">
+        <div class="item-list" id="courseList"></div>
+        <button class="add-btn" id="btnAddCourse" style="margin-top:10px;">＋ 코스 추가</button>
+      </div>
+
+      <!-- 기숙사 -->
+      <div class="tab-pane" id="tab-dorms">
+        <div class="item-list" id="dormList"></div>
+        <button class="add-btn" id="btnAddDorm" style="margin-top:10px;">＋ 기숙사 추가</button>
+      </div>
+
+      <!-- 현지납부 -->
+      <div class="tab-pane" id="tab-fees">
+        <div class="hint" style="margin-bottom:16px;">숫자: 페소 금액 / <strong>none</strong>: 항목 숨김 / <strong>0</strong>: 포함(0원 표시)</div>
+        <div class="fee-grid" id="feeGrid"></div>
+      </div>
+
+      <!-- 할인정책 -->
+      <div class="tab-pane" id="tab-discounts">
+        <!-- 입학금 할인 -->
+        <div class="disc-section">
+          <div class="disc-section-title">입학금 할인 (원)</div>
+          <input id="dAdmDisc" type="number" class="form-input mono" placeholder="0" min="0" style="max-width:200px;">
+        </div>
+        <!-- 장기연수 -->
+        <div class="disc-section">
+          <div class="disc-section-title">
+            <span>장기연수 할인</span>
+            <button class="add-btn" style="width:auto;padding:6px 14px;font-size:.8rem;" id="btnAddLongterm">＋ 추가</button>
+          </div>
+          <div id="longtermList"></div>
+        </div>
+        <!-- 등록일 -->
+        <div class="disc-section">
+          <div class="disc-section-title">
+            <span>등록일 할인 (얼리버드)</span>
+            <button class="add-btn" style="width:auto;padding:6px 14px;font-size:.8rem;" id="btnAddRegdate">＋ 추가</button>
+          </div>
+          <div id="regdateList"></div>
+        </div>
+        <!-- 출발일 -->
+        <div class="disc-section">
+          <div class="disc-section-title">
+            <span>출발일 할인 (성수기 등)</span>
+            <button class="add-btn" style="width:auto;padding:6px 14px;font-size:.8rem;" id="btnAddStartdate">＋ 추가</button>
+          </div>
+          <div id="startdateList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="_shared.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, updateDoc, collection, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+let currentUid = null;
+let schoolData = {};  // 편집 중인 학원
+let isNewSchool = false;
+
+const LOCAL_FEE_KEYS = [
+  ["ssp","SSP 비자"],["ecard","E-card"],["visa_ext","비자연장"],
+  ["student_id","학생증"],["admin_fee","행정비"],["pickup","픽업"],
+  ["textbook","교재비"],["deposit","보증금"]
+];
+const DISC_TARGET_OPTS = ["course","dorm","both","total"];
+const DISC_TYPE_OPTS   = ["amount","percent"];
+
+// ── 인증 가드 ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "auth.html"; return; }
+  currentUid = user.uid;
+  const admSnap = await getDoc(doc(db,"config","admins"));
+  const adminUids = admSnap.exists() ? (admSnap.data().uids || []) : INITIAL_ADMIN_UIDS;
+  if (!adminUids.includes(user.uid)) { window.location.href = "dashboard.html"; return; }
+  loadSchools();
+  loadMembers();
+  loadAdminUids(adminUids);
+});
+
+// ── 패널 전환 ──
+window.showPanel = (name) => {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+  $(`panel-${name}`).classList.add("active");
+  event.currentTarget.classList.add("active");
+};
+
+// ── 탭 전환 ──
+$("editorTabNav").querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $("editorTabNav").querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    $(`tab-${btn.dataset.tab}`).classList.add("active");
+  });
+});
+
+// ─────────── 학원 목록 ───────────
+async function loadSchools() {
+  try {
+    const q = query(collection(db,"schools"), orderBy("school_name"));
+    const snap = await getDocs(q);
+    const grid = $("schoolGrid");
+    grid.innerHTML = "";
+    $("schoolCount").textContent = `총 ${snap.size}개 학원`;
+    if (snap.empty) { grid.innerHTML = `<div style="color:var(--muted);padding:20px;">등록된 학원이 없습니다.</div>`; return; }
+    snap.forEach(d => grid.appendChild(buildSchoolCard(d.id, d.data())));
+  } catch(e) { showToast("학원 로드 실패: "+e.message, "error"); }
+}
+
+function buildSchoolCard(id, data) {
+  const div = document.createElement("div");
+  div.className = "school-card";
+  div.innerHTML = `
+    <div class="school-card-code">${id}</div>
+    <div class="school-card-name">${data.school_name || id}</div>
+    <div class="school-card-meta">
+      <span>📚 코스 ${(data.courses||[]).length}개</span>
+      <span>🏠 기숙사 ${(data.dorms||[]).length}개</span>
+    </div>
+    <div class="school-card-meta" style="margin-top:4px;">
+      <span>💰 입학금 ${fmt(data.admission_fee_krw||0)}원</span>
+    </div>`;
+  div.addEventListener("click", () => openSchoolEditor(id, data));
+  return div;
+}
+
+// ─────────── 학원 편집기 ───────────
+window.openSchoolEditor = (id, data) => {
+  isNewSchool = !id;
+  schoolData = id ? JSON.parse(JSON.stringify(data)) : {
+    school_code:"", school_name:"", admission_fee_krw:0,
+    courses:[], dorms:[],
+    local_fees:{ ssp:0,ecard:0,visa_ext:0,student_id:0,admin_fee:0,pickup:0,textbook:0,deposit:0 },
+    discount_rules:{ admission_discount:0, longterm_rules:[], regdate_rules:[], startdate_rules:[] }
+  };
+  $("slidePanelTitle").textContent = isNewSchool ? "새 학원 추가" : (data?.school_name || id);
+  $("fCode").value = id || ""; $("fCode").disabled = !isNewSchool;
+  $("fName").value = schoolData.school_name || "";
+  $("fAdmission").value = schoolData.admission_fee_krw || 0;
+  $("btnDeleteSchool").style.display = isNewSchool ? "none" : "inline-block";
+  // 첫 탭으로
+  $("editorTabNav").querySelectorAll(".tab-btn")[0].click();
+  renderCourses(); renderDorms(); renderFees(); renderDiscounts();
+  $("slideOverlay").classList.add("open");
+  $("slidePanel").classList.add("open");
+};
+
+window.closeSchoolEditor = () => {
+  $("slideOverlay").classList.remove("open");
+  $("slidePanel").classList.remove("open");
+};
+
+// 저장
+$("btnSaveSchool").addEventListener("click", async () => {
+  const code = $("fCode").value.trim().toUpperCase().replace(/[^A-Z0-9_]/g,"");
+  const name = $("fName").value.trim();
+  if (!code || !name) { showToast("학원코드와 학원명은 필수입니다.", "error"); return; }
+  schoolData.school_code = code;
+  schoolData.school_name = name;
+  schoolData.admission_fee_krw = Number($("fAdmission").value) || 0;
+  $("btnSaveSchool").disabled = true; $("btnSaveSchool").textContent = "저장 중…";
+  try {
+    await setDoc(doc(db,"schools",code), schoolData);
+    showToast("저장되었습니다 ✓");
+    closeSchoolEditor(); loadSchools();
+  } catch(e) { showToast("저장 실패: "+e.message,"error"); }
+  finally { $("btnSaveSchool").disabled=false; $("btnSaveSchool").textContent="저장"; }
+});
+
+// 삭제
+$("btnDeleteSchool").addEventListener("click", async () => {
+  if (!confirm(`"${schoolData.school_name}" 학원을 삭제하시겠습니까?`)) return;
+  await deleteDoc(doc(db,"schools",schoolData.school_code));
+  showToast("삭제되었습니다."); closeSchoolEditor(); loadSchools();
+});
+
+// ─────────── 코스 렌더 ───────────
+function renderCourses() {
+  const list = $("courseList"); list.innerHTML = "";
+  (schoolData.courses || []).forEach((c, i) => {
+    const el = document.createElement("div"); el.className = "item-row";
+    el.innerHTML = `
+      <div class="item-row-head">
+        <input class="form-input" style="font-weight:700;font-size:.95rem;" placeholder="코스명" value="${esc(c.course_name)}" data-f="course_name" data-i="${i}">
+        <button class="del-btn" data-del="${i}">×</button>
+      </div>
+      <div class="item-row-prices">
+        ${["price_1w:1주","price_2w:2주","price_3w:3주","price_per_week_4p:4주+ 주당"].map(p=>{
+          const [f,lbl]=p.split(":");
+          return `<div class="price-field"><div class="price-label">${lbl} (원)</div><input class="form-input mono" type="number" min="0" value="${c[f]||0}" data-f="${f}" data-i="${i}"></div>`;
+        }).join("")}
+      </div>`;
+    el.querySelectorAll("[data-f]").forEach(inp => inp.addEventListener("input", () => {
+      const idx = Number(inp.dataset.i);
+      schoolData.courses[idx][inp.dataset.f] = inp.dataset.f === "course_name" ? inp.value : Number(inp.value)||0;
+    }));
+    el.querySelector("[data-del]").addEventListener("click", () => { schoolData.courses.splice(i,1); renderCourses(); });
+    list.appendChild(el);
+  });
+}
+$("btnAddCourse").addEventListener("click", () => {
+  if (!schoolData.courses) schoolData.courses = [];
+  schoolData.courses.push({ course_name:"", price_1w:0, price_2w:0, price_3w:0, price_per_week_4p:0 });
+  renderCourses();
+  $("courseList").lastElementChild?.querySelector("input")?.focus();
+});
+
+// ─────────── 기숙사 렌더 ───────────
+function renderDorms() {
+  const list = $("dormList"); list.innerHTML = "";
+  (schoolData.dorms || []).forEach((d, i) => {
+    const el = document.createElement("div"); el.className = "item-row";
+    el.innerHTML = `
+      <div class="item-row-head">
+        <input class="form-input" style="font-weight:700;font-size:.95rem;" placeholder="기숙사명 (예: 2인실)" value="${esc(d.dorm_name)}" data-f="dorm_name" data-i="${i}">
+        <button class="del-btn" data-del="${i}">×</button>
+      </div>
+      <div class="item-row-prices">
+        ${["price_1w:1주","price_2w:2주","price_3w:3주","price_per_week_4p:4주+ 주당"].map(p=>{
+          const [f,lbl]=p.split(":");
+          return `<div class="price-field"><div class="price-label">${lbl} (원)</div><input class="form-input mono" type="number" min="0" value="${d[f]||0}" data-f="${f}" data-i="${i}"></div>`;
+        }).join("")}
+      </div>`;
+    el.querySelectorAll("[data-f]").forEach(inp => inp.addEventListener("input", () => {
+      const idx = Number(inp.dataset.i);
+      schoolData.dorms[idx][inp.dataset.f] = inp.dataset.f === "dorm_name" ? inp.value : Number(inp.value)||0;
+    }));
+    el.querySelector("[data-del]").addEventListener("click", () => { schoolData.dorms.splice(i,1); renderDorms(); });
+    list.appendChild(el);
+  });
+}
+$("btnAddDorm").addEventListener("click", () => {
+  if (!schoolData.dorms) schoolData.dorms = [];
+  schoolData.dorms.push({ dorm_name:"", price_1w:0, price_2w:0, price_3w:0, price_per_week_4p:0 });
+  renderDorms();
+  $("dormList").lastElementChild?.querySelector("input")?.focus();
+});
+
+// ─────────── 현지납부 렌더 ───────────
+function renderFees() {
+  const grid = $("feeGrid"); grid.innerHTML = "";
+  const fees = schoolData.local_fees || {};
+  LOCAL_FEE_KEYS.forEach(([key, label]) => {
+    const val = fees[key]; const isNone = String(val??"").toLowerCase() === "none";
+    const div = document.createElement("div"); div.className = "field";
+    div.innerHTML = `
+      <label>${label}</label>
+      <input class="form-input mono" type="${isNone?"text":"number"}" value="${isNone?"none":Number(val||0)}" data-key="${key}" placeholder="0 또는 none" min="0">`;
+    div.querySelector("input").addEventListener("input", e => {
+      const v = e.target.value.trim().toLowerCase();
+      if (!schoolData.local_fees) schoolData.local_fees = {};
+      schoolData.local_fees[key] = v === "none" ? "none" : (Number(v)||0);
+    });
+    grid.appendChild(div);
+  });
+}
+
+// ─────────── 할인 렌더 ───────────
+function renderDiscounts() {
+  const dr = schoolData.discount_rules || {};
+  $("dAdmDisc").value = dr.admission_discount || 0;
+  $("dAdmDisc").oninput = () => { schoolData.discount_rules.admission_discount = Number($("dAdmDisc").value)||0; };
+  renderLongterm(); renderRegdate(); renderStartdate();
+}
+
+function renderLongterm() {
+  const rules = schoolData.discount_rules?.longterm_rules || [];
+  const list = $("longtermList"); list.innerHTML = "";
+  rules.forEach((r, i) => {
+    const el = document.createElement("div"); el.className = "disc-rule";
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+        <div class="field" style="margin:0;"><div class="price-label">최소 주수</div><input class="form-input" type="number" min="1" value="${r.min_weeks||4}" data-f="min_weeks" data-i="${i}"></div>
+        <div class="field" style="margin:0;"><div class="price-label">타입</div><select class="form-select" data-f="type" data-i="${i}">${DISC_TYPE_OPTS.map(t=>`<option ${r.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <div class="field" style="margin:0;"><div class="price-label">값 (원/%)</div><input class="form-input mono" type="number" min="0" value="${r.value||0}" data-f="value" data-i="${i}"></div>
+        <div class="field" style="margin:0;"><div class="price-label">적용대상</div><select class="form-select" data-f="target" data-i="${i}">${DISC_TARGET_OPTS.map(t=>`<option ${r.target===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <button class="del-btn" data-del="${i}">×</button>
+      </div>`;
+    el.querySelectorAll("[data-f]").forEach(inp => inp.addEventListener("change", () => {
+      rules[Number(inp.dataset.i)][inp.dataset.f] = inp.tagName==="SELECT" ? inp.value : Number(inp.value)||0;
+    }));
+    el.querySelector("[data-del]").addEventListener("click", () => { rules.splice(i,1); renderLongterm(); });
+    list.appendChild(el);
+  });
+  if (!rules.length) list.innerHTML = `<div style="color:var(--muted);font-size:.84rem;padding:8px 0;">할인 규칙 없음</div>`;
+}
+$("btnAddLongterm").addEventListener("click", () => {
+  if (!schoolData.discount_rules) schoolData.discount_rules = {};
+  if (!schoolData.discount_rules.longterm_rules) schoolData.discount_rules.longterm_rules = [];
+  schoolData.discount_rules.longterm_rules.push({ min_weeks:4, type:"amount", value:0, target:"course" });
+  renderLongterm();
+});
+
+function renderDateRules(listId, rules) {
+  const list = $(listId); list.innerHTML = "";
+  rules.forEach((r, i) => {
+    const el = document.createElement("div"); el.className = "disc-rule";
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+        <div><div class="price-label">시작일</div><input class="form-input" type="date" value="${r.start||""}" data-f="start" data-i="${i}"></div>
+        <div><div class="price-label">종료일</div><input class="form-input" type="date" value="${r.end||""}" data-f="end" data-i="${i}"></div>
+        <div><div class="price-label">타입</div><select class="form-select" data-f="type" data-i="${i}">${DISC_TYPE_OPTS.map(t=>`<option ${r.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <div><div class="price-label">값</div><input class="form-input mono" type="number" min="0" value="${r.value||0}" data-f="value" data-i="${i}"></div>
+        <div><div class="price-label">대상</div><select class="form-select" data-f="target" data-i="${i}">${DISC_TARGET_OPTS.map(t=>`<option ${r.target===t?"selected":""}>${t}</option>`).join("")}</select></div>
+        <button class="del-btn" data-del="${i}">×</button>
+      </div>`;
+    el.querySelectorAll("[data-f]").forEach(inp => inp.addEventListener("change", () => {
+      rules[Number(inp.dataset.i)][inp.dataset.f] = inp.tagName==="SELECT"||inp.type==="date" ? inp.value : Number(inp.value)||0;
+    }));
+    el.querySelector("[data-del]").addEventListener("click", () => { rules.splice(i,1); renderDateRules(listId,rules); });
+    list.appendChild(el);
+  });
+  if (!rules.length) list.innerHTML = `<div style="color:var(--muted);font-size:.84rem;padding:8px 0;">할인 규칙 없음</div>`;
+}
+function renderRegdate()   { renderDateRules("regdateList",   schoolData.discount_rules?.regdate_rules||[]); }
+function renderStartdate() { renderDateRules("startdateList", schoolData.discount_rules?.startdate_rules||[]); }
+$("btnAddRegdate").addEventListener("click", () => {
+  if (!schoolData.discount_rules) schoolData.discount_rules = {};
+  if (!schoolData.discount_rules.regdate_rules) schoolData.discount_rules.regdate_rules = [];
+  schoolData.discount_rules.regdate_rules.push({ start:"", end:"", type:"amount", value:0, target:"course" });
+  renderRegdate();
+});
+$("btnAddStartdate").addEventListener("click", () => {
+  if (!schoolData.discount_rules) schoolData.discount_rules = {};
+  if (!schoolData.discount_rules.startdate_rules) schoolData.discount_rules.startdate_rules = [];
+  schoolData.discount_rules.startdate_rules.push({ start:"", end:"", type:"percent", value:0, target:"both" });
+  renderStartdate();
+});
+
+// ─────────── 회원 관리 ───────────
+async function loadMembers() {
+  try {
+    const snap = await getDocs(collection(db,"members"));
+    const members = [];
+    snap.forEach(d => members.push({ id:d.id, ...d.data() }));
+    members.sort((a,b) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+    const pending = members.filter(m => m.status === "pending");
+    if (pending.length) { $("pendingBadge").textContent=pending.length; $("pendingBadge").style.display="inline"; }
+    else { $("pendingBadge").style.display="none"; }
+
+    const rows = members.map(m => `
+      <tr>
+        <td><strong>${m.companyName||"—"}</strong><br><span style="color:var(--muted);font-size:.8rem;">${m.email||""}</span></td>
+        <td>${m.consultantName||"—"}<br><span style="color:var(--muted);font-size:.8rem;">${m.consultantPhone||""}</span></td>
+        <td><span class="status-badge ${m.status}">${{pending:"대기",approved:"승인",rejected:"거절"}[m.status]||m.status}</span></td>
+        <td>${fmtDate(m.createdAt)}</td>
+        <td>
+          ${m.status!=="approved"?`<button class="btn-approve" onclick="setMemberStatus('${m.id}','approved')">승인</button>`:""}
+          ${m.status!=="rejected"?`<button class="btn-reject"  onclick="setMemberStatus('${m.id}','rejected')">거절</button>`:""}
+        </td>
+      </tr>`).join("");
+
+    $("membersContent").innerHTML = `
+      <table class="member-table">
+        <thead><tr><th>유학원 / 이메일</th><th>담당자</th><th>상태</th><th>가입일</th><th>처리</th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">회원이 없습니다</td></tr>`}</tbody>
+      </table>`;
+  } catch(e) { $("membersContent").innerHTML = `<div style="padding:20px;color:var(--muted);">로드 실패</div>`; }
+}
+
+window.setMemberStatus = async (uid, status) => {
+  await updateDoc(doc(db,"members",uid), { status });
+  showToast(status === "approved" ? "승인되었습니다 ✓" : "거절되었습니다.");
+  loadMembers();
+};
+
+// ─────────── 관리자 ───────────
+function loadAdminUids(uids) { $("adminUids").value = (uids||[]).join("\n"); }
+$("btnSaveAdmins").addEventListener("click", async () => {
+  const uids = $("adminUids").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  await setDoc(doc(db,"config","admins"), { uids });
+  showToast("관리자 목록이 저장되었습니다 ✓");
+});
+
+$("btnLogout").addEventListener("click", () => signOut(auth).then(() => window.location.href = "auth.html"));
+
+function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+</script>
+</body>
+</html>
