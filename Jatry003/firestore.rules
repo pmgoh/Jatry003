@@ -10,6 +10,14 @@ service cloud.firestore {
       return request.auth != null;
     }
     function isAdmin() {
+      // 슈퍼관리자 또는 부관리자
+      let cfg = get(/databases/$(database)/documents/config/admins).data;
+      return isSignedIn() && (
+        cfg.uids.hasAny([request.auth.uid]) ||
+        cfg.get("subUids", []).hasAny([request.auth.uid])
+      );
+    }
+    function isSuperAdmin() {
       return isSignedIn() &&
         get(/databases/$(database)/documents/config/admins).data.uids.hasAny([request.auth.uid]);
     }
@@ -34,10 +42,10 @@ service cloud.firestore {
     match /members/{memberId} {
       allow create: if isSignedIn() && request.auth.uid == memberId;
       allow read:   if isSignedIn() && (request.auth.uid == memberId || isAdmin());
-      allow update: if isAdmin() ||
+      allow update: if isSuperAdmin() ||
         (isSignedIn() && request.auth.uid == memberId &&
          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status','role']));
-      allow delete: if isAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     // ── 견적 히스토리 ──────────────────────────────────────
@@ -55,7 +63,7 @@ service cloud.firestore {
     // 쓰기: 관리자만
     match /config/{docId} {
       allow read:  if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
   }
