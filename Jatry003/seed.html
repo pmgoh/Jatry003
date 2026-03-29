@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>데이터 이전 — 유학원도우미</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --p: #2563eb; --radius: 14px; --shadow: 0 1px 12px rgba(0,0,0,.07); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f0f2f7; font-family: 'Pretendard', -apple-system, sans-serif; color: #111827; min-height: 100vh; padding: 40px 16px; }
+    #shell { max-width: 720px; margin: 0 auto; }
+    h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; }
+    .sub { color: #6b7280; font-size: .88rem; margin-bottom: 28px; }
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: .9rem; font-family: inherit; outline: none; }
+    .field input:focus { border-color: var(--p); }
+    .btn { padding: 12px 24px; border-radius: 10px; font-size: .92rem; font-weight: 700; cursor: pointer; font-family: inherit; border: none; }
+    .btn-primary { background: var(--p); color: #fff; width: 100%; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .progress { height: 8px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin: 14px 0 6px; display: none; }
+    .progress-bar { height: 100%; background: var(--p); border-radius: 99px; transition: width .3s; width: 0%; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: 10px; padding: 16px; font-size: .82rem; max-height: 360px; overflow-y: auto; line-height: 1.6; }
+    .log-ok   { color: #4ade80; }
+    .log-err  { color: #f87171; }
+    .log-info { color: #93c5fd; }
+    .warn { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px; padding: 12px 16px; font-size: .84rem; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+<div id="shell">
+  <h3>📤 엑셀 → Firebase 데이터 이전</h3>
+  <p class="sub">기존 엑셀 파일의 학원 데이터를 Firebase Firestore로 한 번에 이전합니다.<br>이 작업은 최초 1회만 사용하고 이후엔 관리자 페이지에서 관리하세요.</p>
+
+  <div class="warn">
+    ⚠️ 이미 있는 학원코드는 <strong>덮어쓰기</strong>됩니다. 신중하게 사용하세요.
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>엑셀 파일 선택 (.xlsx)</label>
+      <input id="xlsxFile" type="file" accept=".xlsx">
+    </div>
+    <button class="btn btn-primary" id="btnSeed" disabled>Firebase에 업로드</button>
+    <div class="progress" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="progressText" style="font-size:.82rem;color:#6b7280;margin-bottom:10px;"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-weight:700;">처리 로그</span>
+      <button class="btn" style="background:#f3f4f6;font-size:.8rem;padding:6px 14px;" onclick="document.getElementById('log').textContent=''">지우기</button>
+    </div>
+    <pre id="log">엑셀 파일을 선택하고 업로드 버튼을 누르세요.</pre>
+  </div>
+
+  <div style="text-align:center;margin-top:12px;">
+    <a href="admin.html" style="color:var(--p);font-size:.88rem;font-weight:600;">← 관리자 페이지로 돌아가기</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const $ = id => document.getElementById(id);
+const logEl = $("log");
+
+function log(msg, cls="log-info") {
+  logEl.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// 관리자 확인
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = "auth.html"; return; }
+  const admSnap = await getDoc(doc(db, "config", "admins"));
+  const adminUids = admSnap.exists() ? (admSnap.data().uids || []) : [];
+  if (!adminUids.includes(user.uid)) { alert("관리자만 접근 가능합니다."); window.location.href = "auth.html"; return; }
+  log(`✓ 관리자 확인: ${user.email || user.displayName}`, "log-ok");
+});
+
+$("xlsxFile").addEventListener("change", () => { $("btnSeed").disabled = !$("xlsxFile").files?.[0]; });
+
+function isNoneVal(v) { return ["","none","null","na","n/a"].includes(String(v??"").trim().toLowerCase()); }
+function clean(v) { return isNoneVal(v) ? "none" : (Number(String(v).replace(/[^0-9.]/g,""))||0); }
+function sheetToJson(wb, name) { const ws=wb.Sheets[name]; if(!ws) return []; return XLSX.utils.sheet_to_json(ws,{defval:null}); }
+
+$("btnSeed").addEventListener("click", async () => {
+  const file = $("xlsxFile").files?.[0]; if (!file) return;
+  $("btnSeed").disabled = true;
+  $("progressWrap").style.display = "block";
+  log("━━━━ 업로드 시작 ━━━━");
+
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, {type:"array"});
+    log(`✓ 엑셀 읽기 완료 — 시트: ${wb.SheetNames.join(", ")}`);
+
+    const schoolsRows   = sheetToJson(wb, "schools");
+    const coursesRows   = sheetToJson(wb, "courses");
+    const dormsRows     = sheetToJson(wb, "dorms");
+    const localFeesRows = sheetToJson(wb, "local_fees");
+    const discRows      = sheetToJson(wb, "discount_rules");
+
+    const map = new Map();
+    const ensure = code => {
+      if (!map.has(code)) map.set(code, { school_code:code, school_name:"", admission_fee_krw:0, courses:[], dorms:[], local_fees:{}, discount_rules:{ admission_discount:0, longterm_rules:[], regdate_rules:[], startdate_rules:[] } });
+      return map.get(code);
+    };
+
+    for (const r of schoolsRows) {
+      const code = String(r.school_code||"").trim(); if (!code) continue;
+      const s = ensure(code);
+      s.school_name = String(r.school_name||code);
+      s.admission_fee_krw = Number(r.admission_fee_krw||0);
+    }
+    for (const r of coursesRows) {
+      const code = String(r.school_code||"").trim(); if (!code) continue;
+      ensure(code).courses.push({ course_name:String(r.course_name||""), price_1w:Number(r.price_1w||0), price_2w:Number(r.price_2w||0), price_3w:Number(r.price_3w||0), price_per_week_4p:Number(r.price_per_week_4p||0) });
+    }
+    for (const r of dormsRows) {
+      const code = String(r.school_code||"").trim(); if (!code) continue;
+      ensure(code).dorms.push({ dorm_name:String(r.dorm_name||""), price_1w:Number(r.price_1w||0), price_2w:Number(r.price_2w||0), price_3w:Number(r.price_3w||0), price_per_week_4p:Number(r.price_per_week_4p||0) });
+    }
+    for (const r of localFeesRows) {
+      const code = String(r.school_code||"").trim(); if (!code) continue;
+      const lf = ensure(code).local_fees;
+      for (const k of ["ssp","ecard","visa_ext","student_id","admin_fee","pickup","textbook","deposit"]) lf[k] = clean(r[k]);
+    }
+
+    // 할인 그루핑
+    const discBySchool = new Map();
+    for (const r of discRows) {
+      const code = String(r.school_code||"").trim(); if (!code) continue;
+      if (!discBySchool.has(code)) discBySchool.set(code, []);
+      discBySchool.get(code).push(r);
+    }
+    for (const [code, rows] of discBySchool) {
+      const dr = ensure(code).discount_rules;
+      for (const r of rows) {
+        if (r.admission_discount != null && !isNoneVal(r.admission_discount)) dr.admission_discount = Number(r.admission_discount)||0;
+        if (r.longterm_min_weeks != null && !isNoneVal(r.longterm_min_weeks)) dr.longterm_rules.push({ min_weeks:Number(r.longterm_min_weeks)||4, type:String(r.longterm_type||"amount"), value:Number(r.longterm_value||0), target:String(r.longterm_target||"course") });
+        if (r.regdate_start != null && !isNoneVal(r.regdate_start)) dr.regdate_rules.push({ start:String(r.regdate_start), end:String(r.regdate_end||""), type:String(r.regdate_type||"amount"), value:Number(r.regdate_value||0), target:String(r.regdate_target||"course") });
+        if (r.startdate_start != null && !isNoneVal(r.startdate_start)) dr.startdate_rules.push({ start:String(r.startdate_start), end:String(r.startdate_end||""), type:String(r.startdate_type||"percent"), value:Number(r.startdate_value||0), target:String(r.startdate_target||"both") });
+      }
+    }
+
+    const schools = [...map.values()];
+    log(`📊 ${schools.length}개 학원 파싱 완료`);
+
+    let done = 0;
+    for (const school of schools) {
+      $("progressBar").style.width = `${Math.round((done/schools.length)*100)}%`;
+      $("progressText").textContent = `업로드 중: ${school.school_name} (${done+1}/${schools.length})`;
+      await setDoc(doc(db, "schools", school.school_code), school);
+      log(`  ✓ ${school.school_name} — 코스 ${school.courses.length}개, 기숙사 ${school.dorms.length}개`, "log-ok");
+      done++;
+    }
+
+    $("progressBar").style.width = "100%";
+    $("progressText").textContent = "완료!";
+    log("━━━━ 업로드 완료 ━━━━", "log-ok");
+    log(`✓ ${schools.length}개 학원이 Firebase에 저장되었습니다!`, "log-ok");
+    log(`👉 <a href="admin.html" style="color:#93c5fd;">admin.html</a>에서 확인하세요.`, "log-info");
+
+  } catch(e) {
+    log(`✗ 오류: ${e.message}`, "log-err");
+    console.error(e);
+  } finally {
+    $("btnSeed").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
