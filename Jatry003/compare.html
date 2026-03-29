@@ -28,6 +28,10 @@
     .topbar-actions { display: flex; gap: 8px; align-items: center; }
     .count-label { font-size: .84rem; color: var(--muted); white-space: nowrap; }
 
+    /* ── 고객명 표시 (인쇄용) ── */
+    .customer-label { display: none; font-size: .95rem; font-weight: 700; color: #374151; padding: 6px 12px; background: #f3f4f6; border-radius: 8px; }
+    .customer-label.visible { display: block; }
+
     /* ── 버튼 ── */
     .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); cursor: pointer; border: none; transition: all .15s; }
     .btn-icon svg { width: 17px; height: 17px; }
@@ -37,17 +41,12 @@
     .btn-icon-primary:hover { opacity: .9; }
 
     /* ── 카드 그리드 ── */
-    #cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+    #cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    @media (max-width: 768px) { #cards { grid-template-columns: 1fr; } }
 
     /* ── 카드 ── */
-    .card-wrap { position: relative; }
-    .del-btn {
-      position: absolute; top: 10px; right: 10px;
-      width: 26px; height: 26px; border-radius: 6px;
-      background: #fee2e2; border: none; color: #dc2626;
-      font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity .2s; z-index: 5;
-    }
+    .card-wrap { position: relative; min-width: 0; }
+    .del-btn { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 6px; background: #fee2e2; border: none; color: #dc2626; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; z-index: 5; }
     .card-wrap:hover .del-btn { opacity: 1; }
     .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
     .card-body { padding: 18px; display: flex; flex-direction: column; min-height: 720px; }
@@ -71,27 +70,30 @@
     .empty-icon { font-size: 48px; margin-bottom: 16px; }
     .empty-text { font-size: .92rem; line-height: 1.7; }
 
+    /* ── 고객명 모달 ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: var(--radius); width: 100%; max-width: 380px; padding: 28px; box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+    .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+    .modal-sub { font-size: .84rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .modal-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .95rem; font-family: inherit; outline: none; transition: border-color .2s; }
+    .modal-input:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .modal-footer { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-modal-cancel { flex: 1; padding: 11px; background: #f3f4f6; border: none; border-radius: 10px; font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; color: #374151; }
+    .btn-modal-confirm { flex: 2; padding: 11px; background: var(--p); border: none; border-radius: 10px; font-size: .9rem; font-weight: 700; cursor: pointer; font-family: inherit; color: #fff; }
+    .btn-modal-confirm:hover { opacity: .9; }
+
     /* ── 인쇄 ── */
     @media print {
       .no-print { display: none !important; }
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      body { background: #fff; -webkit-print-color-adjust: exact; }
+      body { background: #fff; }
       #wrap { padding: 6mm; max-width: 100%; }
-
-      .brand-header {
-        box-shadow: none; border: 1px solid var(--border);
-        margin-bottom: 6mm; padding: 3mm 5mm;
-        break-inside: avoid;
-      }
+      .brand-header { box-shadow: none; border: 1px solid var(--border); margin-bottom: 5mm; padding: 3mm 5mm; break-inside: avoid; }
       .brand-logo-wrap { width: 40px; height: 40px; }
       .brand-company { font-size: .95rem; }
-
-      #cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4mm;
-      }
-
+      .customer-label { display: block !important; }
+      #cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
       .card-wrap { break-inside: avoid; }
       .del-btn { display: none; }
       .card { box-shadow: none; border: 1px solid var(--border); break-inside: avoid; }
@@ -106,11 +108,7 @@
       .final-amount { font-size: 1.1rem; }
       .final-sub { font-size: .68rem; }
       .manual-disc { display: none; }
-
-      @page {
-        size: A4 landscape;
-        margin: 8mm;
-      }
+      @page { size: A4 landscape; margin: 8mm; }
     }
   </style>
 </head>
@@ -120,21 +118,21 @@
   <!-- 브랜딩 헤더 -->
   <div class="brand-header">
     <div class="brand-logo-wrap" id="brandLogo">🏢</div>
-    <div>
+    <div style="flex:1;">
       <div class="brand-company" id="brandCompany">학비 비교표</div>
       <div class="brand-slogan" id="brandSlogan"></div>
       <div class="brand-consultant" id="brandConsultant"></div>
     </div>
+    <!-- 고객명 (인쇄 시 표시) -->
+    <div class="customer-label" id="customerLabel"></div>
     <div class="brand-spacer"></div>
     <div class="topbar-actions no-print">
       <span class="count-label">총 <span id="countLabel">0</span>개 학원</span>
-      <!-- 초기화: broom 아이콘 -->
       <button class="btn-icon btn-icon-outline" id="btnClear" title="비교표 초기화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
         </svg>
       </button>
-      <!-- 인쇄 -->
       <button class="btn-icon btn-icon-primary" id="btnPrint" title="인쇄 / PDF 저장">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>
@@ -151,14 +149,48 @@
   <div id="cards"></div>
 </div>
 
-<script>
-"use strict";
+<!-- 고객 이름 입력 모달 -->
+<div class="modal-overlay" id="printModal">
+  <div class="modal">
+    <div class="modal-title">🖨️ 견적서 인쇄</div>
+    <div class="modal-sub">고객 이름을 입력하면 견적서에 표시되고<br>대시보드 견적 목록에 저장됩니다.</div>
+    <input class="modal-input" id="customerNameInput" type="text" placeholder="고객 이름 (예: 홍길동)" maxlength="30">
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" id="btnModalCancel">취소</button>
+      <button class="btn-modal-confirm" id="btnModalConfirm">확인 후 인쇄</button>
+    </div>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
 const KEY = "tuition_compares_v2";
 const fmtN = n => Math.round(Number(n)||0).toLocaleString("en-US");
+
 function load(){ try{ const r=localStorage.getItem(KEY); const a=r?JSON.parse(r):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function save(a){ try{ localStorage.setItem(KEY,JSON.stringify(a)); }catch(e){} }
 let _lastSig = "";
 function sig(a){ try{ return JSON.stringify(a||[]); }catch(e){ return ""; } }
+
+let currentUser = null;
+let memberData  = null;
+
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  if (user) {
+    const snap = await getDoc(doc(db,"members",user.uid));
+    if (snap.exists()) memberData = snap.data();
+  }
+});
 
 function applyBranding(member) {
   if (!member) return;
@@ -213,25 +245,21 @@ function render() {
             <div class="school-name">${x.schoolName||"—"}</div>
             <div class="school-weeks mono">${x.totalWeeks||0}주 과정</div>
           </div>
-
           <div class="section">
             <div class="rowline"><div class="left">입학금</div><div class="right mono">${fmtN(x.admissionFee||0)}원</div></div>
           </div>
-
           <div class="section">
             <div class="section-title">📚 코스</div>
             <div class="mono">${rowLines(courseLines)}</div>
             <div class="divider" style="margin:6px 0;"></div>
             <div class="rowline"><div class="left">합계</div><div class="right mono">${fmtN(x.courseTotal||0)}원</div></div>
           </div>
-
           <div class="section">
             <div class="section-title">🏠 기숙사</div>
             <div class="mono">${rowLines(dormLines)}</div>
             <div class="divider" style="margin:6px 0;"></div>
             <div class="rowline"><div class="left">합계</div><div class="right mono">${fmtN(x.dormTotal||0)}원</div></div>
           </div>
-
           <div class="section">
             <div class="section-title">🏷️ 할인</div>
             <div class="mono">${rowLines(discLines)}</div>
@@ -242,9 +270,7 @@ function render() {
               <div class="right"><input class="manual-disc" data-md="${idx}" type="text" inputmode="numeric" value="${manualDisc?fmtN(manualDisc):""}" placeholder="0"></div>
             </div>
           </div>
-
           <div class="spacer"></div>
-
           <div class="final-card">
             <div class="final-amount mono">${fmtN(payFinal)}원</div>
             <div class="divider" style="margin:8px 0;"></div>
@@ -276,7 +302,56 @@ function render() {
 
 function startAutoSync() { setInterval(()=>{ const s=sig(load()); if(s!==_lastSig){ _lastSig=s; render(); } }, 500); }
 
-document.getElementById("btnPrint").addEventListener("click", () => window.print());
+// ── 인쇄 버튼 → 고객명 모달 ──
+document.getElementById("btnPrint").addEventListener("click", () => {
+  const arr = load();
+  if (!arr.length) { alert("비교표가 비어 있습니다."); return; }
+  document.getElementById("customerNameInput").value = "";
+  document.getElementById("printModal").classList.add("open");
+  setTimeout(() => document.getElementById("customerNameInput").focus(), 100);
+});
+
+document.getElementById("btnModalCancel").addEventListener("click", () => {
+  document.getElementById("printModal").classList.remove("open");
+});
+
+document.getElementById("btnModalConfirm").addEventListener("click", async () => {
+  const name = document.getElementById("customerNameInput").value.trim();
+  if (!name) { document.getElementById("customerNameInput").focus(); return; }
+
+  document.getElementById("printModal").classList.remove("open");
+
+  // 고객명 헤더에 표시
+  const label = document.getElementById("customerLabel");
+  label.textContent = `고객: ${name}`;
+  label.classList.add("visible");
+
+  // Firestore에 견적 저장
+  const arr = load();
+  if (currentUser) {
+    try {
+      await addDoc(collection(db, "quotes"), {
+        memberId:     currentUser.uid,
+        customerName: name,
+        compares:     arr,
+        createdAt:    serverTimestamp(),
+      });
+    } catch(e) { console.warn("견적 저장 실패:", e); }
+  }
+
+  // 인쇄
+  setTimeout(() => {
+    window.print();
+    // 인쇄 후 고객명 숨기기
+    setTimeout(() => { label.classList.remove("visible"); label.textContent = ""; }, 1000);
+  }, 200);
+});
+
+// Enter 키로 확인
+document.getElementById("customerNameInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("btnModalConfirm").click();
+});
+
 document.getElementById("btnClear").addEventListener("click", () => {
   if (!confirm("비교표를 모두 초기화하시겠습니까?")) return;
   save([]); _lastSig=sig(load()); render();

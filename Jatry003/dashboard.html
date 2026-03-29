@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>대시보드 — 유학원도우미</title>
+  <title>대시보드 — 유학원 도우미</title>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -111,6 +111,13 @@
       .sidebar { display: none; }
       .main { margin-left: 0; max-width: 100%; padding: 20px 16px; }
     }
+
+    /* ── 견적 목록 ── */
+    .quote-list { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .quote-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; transition: all .15s; }
+    .quote-card:hover { border-color: var(--p); box-shadow: 0 2px 12px rgba(37,99,235,.1); background: var(--p-light); }
+    .quote-card-main { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .quote-customer { font-size: .92rem; font-weight: 700; color: #111827; }
   </style>
 </head>
 <body>
@@ -120,7 +127,7 @@
   <aside class="sidebar">
     <div class="sidebar-logo">
       <span class="sidebar-logo-icon">🏫</span>
-      <span class="sidebar-logo-text">유학원도우미</span>
+      <span class="sidebar-logo-text">유학원 도우미</span>
     </div>
     <div class="nav-label">메뉴</div>
     <a class="nav-item active" href="dashboard.html"><span class="icon">🏠</span> 대시보드</a>
@@ -177,7 +184,9 @@
     </div>
 
     <!-- 견적 히스토리 -->
-    <div class="section-title">최근 견적 히스토리</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="section-title" style="margin-bottom:0;">📋 견적 목록</div>
+    </div>
     <div class="history-card">
       <div id="historyContent">
         <div class="empty-state">
@@ -222,11 +231,22 @@
         </div>
       </div>
       <div class="field">
-        <label>로고 이미지 URL <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
-        <input id="setLogoUrl" type="url" placeholder="https://...">
-        <div class="logo-preview" id="logoPreview">
-          <span style="font-size:24px;">🏢</span>
+        <label>로고 이미지 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <div class="logo-preview" id="logoPreview" style="flex-shrink:0;">
+            <span style="font-size:24px;">🏢</span>
+          </div>
+          <div style="flex:1;min-width:150px;">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px dashed #d1d5db;border-radius:10px;cursor:pointer;font-size:.84rem;color:var(--muted);transition:all .2s;" id="logoUploadLabel">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span id="logoUploadText">파일 선택 (JPG/PNG/SVG)</span>
+              <input id="logoFileInput" type="file" accept="image/*" style="display:none;">
+            </label>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:5px;">또는 URL 직접 입력</div>
+            <input id="setLogoUrl" type="url" placeholder="https://..." style="margin-top:6px;width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;font-family:inherit;outline:none;">
+          </div>
         </div>
+        <div id="logoUploadStatus" style="font-size:.78rem;margin-top:6px;"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -241,11 +261,13 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs, deleteDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
+const storage = getStorage(app);
 const db   = getFirestore(app);
 const $ = id => document.getElementById(id);
 
@@ -287,6 +309,7 @@ function renderSidebar() {
 
 // ── 히스토리 로드 ──
 async function loadHistory() {
+  $("historyContent").innerHTML = `<div style="padding:40px;text-align:center;"><div class="spinner" style="width:24px;height:24px;border-color:#e5e7eb;border-top-color:var(--p);margin:0 auto;"></div></div>`;
   try {
     const q = query(
       collection(db, "quotes"),
@@ -299,8 +322,8 @@ async function loadHistory() {
 
     // 통계
     const now = new Date();
-    const thisMonth = quotes.filter(q => {
-      const d = q.createdAt?.toDate?.() || new Date(q.createdAt);
+    const thisMonth = quotes.filter(qt => {
+      const d = qt.createdAt?.toDate?.() || new Date(qt.createdAt);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
     $("statTotal").textContent = quotes.length;
@@ -310,31 +333,38 @@ async function loadHistory() {
       $("historyContent").innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📋</div>
-          <div class="empty-text">아직 견적 히스토리가 없어요.<br>학비계산기에서 비교표를 만들어보세요!</div>
+          <div class="empty-text">아직 견적이 없어요.<br>학비계산기에서 비교표를 만들고 인쇄해보세요!</div>
         </div>`;
       return;
     }
 
-    const rows = quotes.map(q => {
-      const schools = (q.compares || []).map(c => `<span class="school-tag">${c.schoolName}</span>`).join("");
-      const date = fmtDate(q.createdAt);
-      return `<tr>
-        <td>${date}</td>
-        <td><div class="school-tags">${schools || "—"}</div></td>
-        <td>${(q.compares || []).length}개 비교</td>
-        <td style="text-align:right;">
-          <button class="btn-sm danger" onclick="deleteQuote('${q.id}')">삭제</button>
-        </td>
-      </tr>`;
+    // 견적 카드 목록
+    const cards = quotes.map(qt => {
+      const schools = (qt.compares || []).map(c => `<span class="school-tag">${c.schoolName}</span>`).join("");
+      const dt = qt.createdAt?.toDate ? qt.createdAt.toDate() : new Date(qt.createdAt);
+      const dateStr = dt.toLocaleDateString("ko-KR", {year:"numeric",month:"2-digit",day:"2-digit"});
+      const timeStr = dt.toLocaleTimeString("ko-KR", {hour:"2-digit",minute:"2-digit"});
+      const customer = qt.customerName || "—";
+      const compareCount = (qt.compares||[]).length;
+      return `
+        <div class="quote-card" data-id="${qt.id}" style="cursor:pointer;" onclick="restoreQuote('${qt.id}')">
+          <div class="quote-card-main">
+            <div>
+              <div class="quote-customer">👤 ${customer}</div>
+              <div class="school-tags" style="margin-top:6px;">${schools||"—"}</div>
+              <div style="font-size:.78rem;color:var(--muted);margin-top:5px;">
+                ${dateStr} ${timeStr} · ${compareCount}개 학원 비교
+              </div>
+            </div>
+            <button class="btn-sm danger" onclick="event.stopPropagation();deleteQuote('${qt.id}')">삭제</button>
+          </div>
+        </div>`;
     }).join("");
 
-    $("historyContent").innerHTML = `
-      <table class="history-table">
-        <thead><tr><th>날짜</th><th>학원</th><th>비교 수</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    $("historyContent").innerHTML = `<div class="quote-list">${cards}</div>`;
   } catch(e) {
-    $("historyContent").innerHTML = `<div class="empty-state"><div class="empty-text">히스토리 로드 실패</div></div>`;
+    console.error(e);
+    $("historyContent").innerHTML = `<div class="empty-state"><div class="empty-text">로드 실패: ${e.message}</div></div>`;
   }
 }
 
@@ -343,6 +373,18 @@ window.deleteQuote = async (id) => {
   await deleteDoc(doc(db, "quotes", id));
   showToast("삭제되었습니다.");
   loadHistory();
+};
+
+// 견적 복원 → compare.html로 이동
+window.restoreQuote = async (id) => {
+  try {
+    const snap = await getDocs(query(collection(db,"quotes"), where("memberId","==",currentUser.uid), orderBy("createdAt","desc")));
+    let target = null;
+    snap.forEach(d => { if(d.id === id) target = d.data(); });
+    if (!target?.compares) return;
+    localStorage.setItem("tuition_compares_v2", JSON.stringify(target.compares));
+    window.open("compare.html", "_blank");
+  } catch(e) { showToast("불러오기 실패: "+e.message, "error"); }
 };
 
 // ── 설정 모달 ──
@@ -372,6 +414,27 @@ function updateLogoPreview(url) {
     ? `<img src="${url}" alt="로고" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">`
     : `<span style="font-size:24px;">🏢</span>`;
 }
+
+// 로고 파일 업로드
+document.getElementById("logoFileInput")?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0]; if (!file) return;
+  const status = document.getElementById("logoUploadStatus");
+  const label = document.getElementById("logoUploadText");
+  label.textContent = "업로드 중…";
+  status.style.color = "#6b7280"; status.textContent = "Firebase Storage에 업로드 중…";
+  try {
+    const storageRef = ref(storage, `logos/${currentUser.uid}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    document.getElementById("setLogoUrl").value = url;
+    updateLogoPreview(url);
+    status.style.color = "#16a34a"; status.textContent = "✓ 업로드 완료! 저장 버튼을 눌러 적용하세요.";
+    label.textContent = file.name;
+  } catch(e) {
+    status.style.color = "#dc2626"; status.textContent = "업로드 실패: " + e.message;
+    label.textContent = "파일 선택 (JPG/PNG/SVG)";
+  }
+});
 
 $("btnSaveSettings").addEventListener("click", async () => {
   const updates = {
