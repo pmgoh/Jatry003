@@ -238,8 +238,7 @@ async function routeAfterLogin(user) {
     $("pendingView").style.display = "block";
     $("pendingEmail").textContent = "이 계정은 만료되었습니다.";
     document.querySelector(".pending-title").textContent = "계정 만료";
-    document.querySelector(".pending-desc").textContent = "관리자에 의해 계정이 만료 처리되었습니다.
-문의가 필요하시면 서비스 관리자에게 연락해 주세요.";
+    document.querySelector(".pending-desc").textContent = "관리자에 의해 계정이 만료 처리되었습니다. 문의가 필요하시면 서비스 관리자에게 연락해 주세요.";
     return;
   }
   if (member.status === "approved") {
