@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>슈퍼관리자 — 유학원도우미</title>
+  <title>슈퍼관리자 — 유학원 도우미</title>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -118,10 +118,12 @@
     .member-table tr:last-child td { border-bottom: none; }
     .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 700; }
     .status-badge.pending  { background: #fef3c7; color: #92400e; }
+    .status-badge.expired { background: #f3f4f6; color: #6b7280; }
     .status-badge.approved { background: #dcfce7; color: #166534; }
     .status-badge.rejected { background: #fee2e2; color: #991b1b; }
     .btn-approve { padding: 5px 12px; background: #dcfce7; color: #166534; border: none; border-radius: 6px; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; }
     .btn-reject  { padding: 5px 12px; background: #fee2e2; color: #991b1b; border: none; border-radius: 6px; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 6px; }
+    .btn-expire  { padding: 5px 12px; background: #f3f4f6; color: #6b7280; border: none; border-radius: 6px; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 6px; }
     .mono { font-variant-numeric: tabular-nums; }
 
     /* ── 스피너 ── */
@@ -136,12 +138,14 @@
   <!-- ── 사이드바 ── -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <span class="sidebar-logo-text">🏫 유학원도우미<span class="sidebar-badge">ADMIN</span></span>
+      <span class="sidebar-logo-text">🏫 유학원 도우미<span class="sidebar-badge">ADMIN</span></span>
     </div>
     <div class="nav-label">관리</div>
     <button class="nav-item active" onclick="showPanel('schools')">🏫 학원 관리</button>
     <button class="nav-item superonly" onclick="showPanel('members')" style="display:none;">👥 회원 관리 <span class="nav-badge" id="pendingBadge" style="display:none;">0</span></button>
     <button class="nav-item superonly" onclick="showPanel('admins')" style="display:none;">🔑 관리자 설정</button>
+    <div class="nav-label">도구</div>
+    <a class="nav-item" href="calculator.html">🧮 학비계산기</a>
     <div class="sidebar-bottom">
       <button class="btn-logout" id="btnLogout">로그아웃</button>
     </div>
@@ -628,11 +632,12 @@ async function loadMembers() {
       <tr>
         <td><strong>${m.companyName||"—"}</strong><br><span style="color:var(--muted);font-size:.8rem;">${m.email||""}</span></td>
         <td>${m.consultantName||"—"}<br><span style="color:var(--muted);font-size:.8rem;">${m.consultantPhone||""}</span></td>
-        <td><span class="status-badge ${m.status}">${{pending:"대기",approved:"승인",rejected:"거절"}[m.status]||m.status}</span></td>
+        <td><span class="status-badge ${m.status}">${{pending:"대기",approved:"승인",rejected:"거절",expired:"만료"}[m.status]||m.status}</span></td>
         <td>${fmtDate(m.createdAt)}</td>
         <td>
           ${m.status!=="approved"?`<button class="btn-approve" onclick="setMemberStatus('${m.id}','approved')">승인</button>`:""}
           ${m.status!=="rejected"?`<button class="btn-reject"  onclick="setMemberStatus('${m.id}','rejected')">거절</button>`:""}
+          ${m.status!=="expired"?`<button class="btn-expire"   onclick="setMemberStatus('${m.id}','expired')">만료</button>`:""}
         </td>
       </tr>`).join("");
 
@@ -645,10 +650,39 @@ async function loadMembers() {
 }
 
 window.setMemberStatus = async (uid, status) => {
-  await updateDoc(doc(db,"members",uid), { status });
-  showToast(status === "approved" ? "승인되었습니다 ✓" : "거절되었습니다.");
+  const data = { status };
+  if (status === "expired") {
+    // 만료일: 오늘 + 14일
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 14);
+    data.expiresAt = expiresAt.toISOString();
+    if (!confirm("만료 처리 시 14일 후 해당 회원의 모든 데이터가 자동 삭제됩니다. 진행하시겠습니까?")) return;
+  }
+  await updateDoc(doc(db,"members",uid), data);
+  const msg = {approved:"승인되었습니다 ✓", rejected:"거절되었습니다.", expired:"만료 처리되었습니다. 14일 후 자동 삭제됩니다."}[status]||"처리되었습니다.";
+  showToast(msg);
   loadMembers();
 };
+
+// 만료 회원 자동 삭제 체크 (관리자 페이지 로드 시 실행)
+async function checkAndDeleteExpiredMembers() {
+  try {
+    const snap = await getDocs(collection(db,"members"));
+    const now = new Date();
+    for (const d of snap.docs) {
+      const m = d.data();
+      if (m.status === "expired" && m.expiresAt) {
+        const expDate = new Date(m.expiresAt);
+        if (now >= expDate) {
+          // 견적 데이터도 삭제
+          const qSnap = await getDocs(query(collection(db,"quotes"), where ? undefined : collection(db,"quotes")));
+          await deleteDoc(doc(db,"members",d.id));
+          console.log("만료 회원 삭제:", d.id);
+        }
+      }
+    }
+  } catch(e) { console.warn("만료 체크 실패:", e); }
+}
 
 // ─────────── 관리자 ───────────
 function loadAdminUids(uids, subUids) {

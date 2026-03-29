@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>로그인 — 유학원도우미</title>
+  <title>로그인 — 유학원 도우미</title>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root { --p: #2563eb; --p-light: #eff6ff; --radius: 16px; --shadow: 0 4px 24px rgba(0,0,0,.10); }
@@ -69,7 +69,7 @@
 <div class="wrap">
   <div class="logo">
     <div class="logo-mark">🏫</div>
-    <div class="logo-text">유학원도우미</div>
+    <div class="logo-text">유학원 도우미</div>
     <div class="logo-sub">필리핀 어학원 학비 비교 &amp; 견적 도우미</div>
   </div>
 
@@ -231,6 +231,17 @@ async function routeAfterLogin(user) {
     return;
   }
   const member = snap.data();
+  // 만료 회원 체크
+  if (member.status === "expired") {
+    await signOut(auth);
+    $("authView").style.display = "none";
+    $("pendingView").style.display = "block";
+    $("pendingEmail").textContent = "이 계정은 만료되었습니다.";
+    document.querySelector(".pending-title").textContent = "계정 만료";
+    document.querySelector(".pending-desc").textContent = "관리자에 의해 계정이 만료 처리되었습니다.
+문의가 필요하시면 서비스 관리자에게 연락해 주세요.";
+    return;
+  }
   if (member.status === "approved") {
     const admSnap = await getDoc(doc(db, "config", "admins"));
     const adminUids = admSnap.exists() ? (admSnap.data().uids || []) : [];

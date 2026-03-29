@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>학비계산기 — 유학원도우미</title>
+  <title>학비계산기 — 유학원 도우미</title>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
@@ -55,6 +55,7 @@
     .input-group-text { padding: 0 12px; background: #f9fafb; border: 1.5px solid var(--border); border-left: 0; font-size: .85rem; color: var(--muted); display: flex; align-items: center; }
     .input-group-text:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
     .input-group-text:first-child { border-right: 0; border-left: 1.5px solid var(--border); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .input-group .btn { flex-shrink: 0; white-space: nowrap; min-width: 52px; }
 
     /* ── 주수 컨트롤 ── */
     .week-ctrl { display: flex; }
@@ -65,13 +66,13 @@
     .btn-step:hover { background: var(--p-light); color: var(--p); }
 
     /* ── 세그 행 ── */
-    .seg-row { display: grid; grid-template-columns: 1.5fr 1fr 2.5fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
+    .seg-row { display: grid; grid-template-columns: 140px 90px 1fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
     .seg-add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 2px dashed #d1d5db; border-radius: var(--radius-sm); background: none; width: 100%; cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--muted); font-family: inherit; transition: all .2s; margin-top: 6px; }
     .seg-add-btn:hover { border-color: var(--p); color: var(--p); background: var(--p-light); }
     .seg-add-btn:disabled { opacity: .4; cursor: not-allowed; }
 
     /* ── 현지납부 ── */
-    .fee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+    .fee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
     .fee-item label { font-size: .8rem; font-weight: 600; color: #374151; display: flex; justify-content: space-between; }
     .fee-sub { font-size: .75rem; color: var(--muted); margin-top: 3px; }
 
@@ -278,10 +279,30 @@ function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = "auth.html"; return; }
   currentUser = user;
+  // 관리자 여부 체크
+  const admSnap = await getDoc(doc(db,"config","admins"));
+  const admCfg  = admSnap.exists() ? admSnap.data() : {};
+  const superUids = admCfg.uids || [];
+  const subUids   = admCfg.subUids || [];
+  const isAdminUser = superUids.includes(user.uid) || subUids.includes(user.uid);
+
   const snap = await getDoc(doc(db,"members",user.uid));
-  if (!snap.exists() || snap.data().status !== "approved") { window.location.href = "auth.html"; return; }
-  memberData = snap.data();
+  if (!isAdminUser && (!snap.exists() || snap.data().status !== "approved")) {
+    window.location.href = "auth.html"; return;
+  }
+
+  memberData = snap.exists() ? snap.data() : {
+    companyName: "관리자", slogan: "", consultantName: "", consultantPhone: "",
+    primaryColor: "#2563eb", logoUrl: ""
+  };
   applyMemberBranding(memberData);
+
+  // 계산기 상단에 관리자 뒤로가기 표시
+  if (isAdminUser) {
+    const backBtn = document.querySelector("a[href='dashboard.html']");
+    if (backBtn) { backBtn.href = "admin.html"; backBtn.textContent = "← 관리자"; }
+  }
+
   loadFromFirebase();
 });
 

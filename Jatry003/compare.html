@@ -3,82 +3,114 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>학비 비교표 — 유학원도우미</title>
+  <title>학비 비교표 — 유학원 도우미</title>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --p: #2563eb; --p-light: #eff6ff; --p-dark: #1d4ed8;
+      --p: #2563eb; --p-light: #eff6ff;
       --bg: #f0f2f7; --surface: #fff; --border: #e8eaed; --muted: #6b7280;
       --radius: 14px; --radius-sm: 10px; --shadow: 0 1px 12px rgba(0,0,0,.07);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); font-family: 'Pretendard', -apple-system, sans-serif; color: #111827; }
-    #wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px; }
+    #wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px; }
     .mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
     .muted { color: var(--muted); }
 
     /* ── 브랜딩 헤더 ── */
-    .brand-header { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
-    .brand-logo-wrap { width: 56px; height: 56px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); flex-shrink: 0; font-size: 26px; }
+    .brand-header { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin-bottom: 18px; display: flex; align-items: center; gap: 14px; }
+    .brand-logo-wrap { width: 52px; height: 52px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); flex-shrink: 0; font-size: 24px; }
     .brand-logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
-    .brand-company { font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em; color: var(--p); }
-    .brand-slogan { font-size: .82rem; color: var(--muted); margin-top: 2px; }
-    .brand-consultant { font-size: .84rem; color: #374151; margin-top: 6px; }
+    .brand-company { font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; color: var(--p); }
+    .brand-slogan { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .brand-consultant { font-size: .82rem; color: #374151; margin-top: 4px; }
     .brand-spacer { flex: 1; }
     .topbar-actions { display: flex; gap: 8px; align-items: center; }
-    .count-label { font-size: .88rem; color: var(--muted); }
+    .count-label { font-size: .84rem; color: var(--muted); white-space: nowrap; }
 
     /* ── 버튼 ── */
-    .btn { padding: 9px 16px; border-radius: var(--radius-sm); font-size: .85rem; font-weight: 700; cursor: pointer; font-family: inherit; border: none; transition: all .15s; }
-    .btn-icon { width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); }
-    .btn-primary { background: var(--p); color: #fff; }
-    .btn-outline { background: none; border: 1.5px solid var(--border); color: #374151; }
-    .btn-outline:hover { border-color: var(--p); color: var(--p); }
-    .btn-danger-outline { background: none; border: 1.5px solid #fecaca; color: #dc2626; }
-    .btn-icon svg { width: 18px; height: 18px; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); cursor: pointer; border: none; transition: all .15s; }
+    .btn-icon svg { width: 17px; height: 17px; }
+    .btn-icon-outline { background: none; border: 1.5px solid var(--border); color: #374151; }
+    .btn-icon-outline:hover { border-color: var(--muted); }
+    .btn-icon-primary { background: var(--p); color: #fff; }
+    .btn-icon-primary:hover { opacity: .9; }
+
+    /* ── 카드 그리드 ── */
+    #cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 
     /* ── 카드 ── */
+    .card-wrap { position: relative; }
+    .del-btn {
+      position: absolute; top: 10px; right: 10px;
+      width: 26px; height: 26px; border-radius: 6px;
+      background: #fee2e2; border: none; color: #dc2626;
+      font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .2s; z-index: 5;
+    }
+    .card-wrap:hover .del-btn { opacity: 1; }
     .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
-    .card-body { padding: 20px; display: flex; flex-direction: column; min-height: 780px; }
-    .section { background: #f9fafb; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
-    .section-title { font-size: .82rem; font-weight: 700; color: #374151; margin-bottom: 8px; }
-    .rowline { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: .84rem; margin-bottom: 3px; }
-    .rowline .left { flex: 1; min-width: 0; }
-    .rowline .right { flex-shrink: 0; text-align: right; white-space: nowrap; }
-    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .card-body { padding: 18px; display: flex; flex-direction: column; min-height: 720px; }
+    .school-name { font-size: 1rem; font-weight: 700; padding-right: 30px; }
+    .school-weeks { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .section { background: #f9fafb; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 7px; }
+    .section-title { font-size: .8rem; font-weight: 700; color: #374151; margin-bottom: 6px; }
+    .rowline { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: .82rem; margin-bottom: 2px; }
+    .rowline .left { flex: 1; min-width: 0; color: var(--muted); }
+    .rowline .right { flex-shrink: 0; text-align: right; white-space: nowrap; font-weight: 600; }
+    .divider { height: 1px; background: var(--border); margin: 10px 0; }
     .spacer { flex: 1; }
-
-    /* ── 학원명/주수 ── */
-    .school-name { font-size: 1.05rem; font-weight: 700; }
-    .school-weeks { font-size: .82rem; color: var(--muted); margin-top: 3px; }
-
-    /* ── 최종 금액 카드 ── */
-    .final-card { background: var(--p-light); border: 1.5px solid color-mix(in srgb, var(--p) 30%, transparent); border-radius: var(--radius-sm); padding: 14px 16px; }
-    .final-amount { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; color: var(--p); text-align: right; }
-    .final-sub { font-size: .8rem; color: var(--muted); margin-top: 6px; }
-
-    /* ── 추가 할인 ── */
-    .manual-disc { width: 130px; padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: .84rem; font-family: inherit; text-align: right; outline: none; }
+    .final-card { background: var(--p-light); border: 1.5px solid color-mix(in srgb, var(--p) 25%, transparent); border-radius: var(--radius-sm); padding: 13px 15px; margin-top: auto; }
+    .final-amount { font-size: 1.4rem; font-weight: 800; letter-spacing: -.03em; color: var(--p); text-align: right; }
+    .final-sub { font-size: .78rem; color: var(--muted); margin-top: 5px; }
+    .manual-disc { width: 120px; padding: 4px 9px; border: 1.5px solid var(--border); border-radius: 6px; font-size: .82rem; font-family: inherit; text-align: right; outline: none; }
     .manual-disc:focus { border-color: var(--p); }
 
     /* ── 빈 상태 ── */
     .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
     .empty-icon { font-size: 48px; margin-bottom: 16px; }
-    .empty-text { font-size: .95rem; }
+    .empty-text { font-size: .92rem; line-height: 1.7; }
 
+    /* ── 인쇄 ── */
     @media print {
       .no-print { display: none !important; }
-      body { background: #fff; }
-      #wrap { padding: 0; max-width: 100%; }
-      .brand-header { box-shadow: none; border: 1px solid var(--border); margin-bottom: 12px; padding: 14px 16px; }
-      .card { box-shadow: none; border: 1px solid var(--border); }
-      .card-body { min-height: 0; padding: 12px; }
-      .section { padding: 7px 10px; }
-      .rowline { font-size: .78rem; }
-      .section-title { font-size: .76rem; }
-      .final-amount { font-size: 1.2rem; }
-      .divider { margin: 8px 0; }
-      @page { margin: 8mm; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: #fff; -webkit-print-color-adjust: exact; }
+      #wrap { padding: 6mm; max-width: 100%; }
+
+      .brand-header {
+        box-shadow: none; border: 1px solid var(--border);
+        margin-bottom: 6mm; padding: 3mm 5mm;
+        break-inside: avoid;
+      }
+      .brand-logo-wrap { width: 40px; height: 40px; }
+      .brand-company { font-size: .95rem; }
+
+      #cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4mm;
+      }
+
+      .card-wrap { break-inside: avoid; }
+      .del-btn { display: none; }
+      .card { box-shadow: none; border: 1px solid var(--border); break-inside: avoid; }
+      .card-body { padding: 8px; min-height: 0; }
+      .school-name { font-size: .88rem; }
+      .school-weeks { font-size: .72rem; }
+      .section { padding: 5px 8px; margin-bottom: 4px; }
+      .section-title { font-size: .72rem; margin-bottom: 4px; }
+      .rowline { font-size: .72rem; margin-bottom: 1px; }
+      .divider { margin: 6px 0; }
+      .final-card { padding: 8px 10px; }
+      .final-amount { font-size: 1.1rem; }
+      .final-sub { font-size: .68rem; }
+      .manual-disc { display: none; }
+
+      @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
     }
   </style>
 </head>
@@ -96,12 +128,17 @@
     <div class="brand-spacer"></div>
     <div class="topbar-actions no-print">
       <span class="count-label">총 <span id="countLabel">0</span>개 학원</span>
-      <a href="calculator.html" class="btn btn-outline">← 계산기</a>
-      <button class="btn btn-outline btn-icon" id="btnClear" title="초기화">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      <!-- 초기화: broom 아이콘 -->
+      <button class="btn-icon btn-icon-outline" id="btnClear" title="비교표 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        </svg>
       </button>
-      <button class="btn btn-primary btn-icon" id="btnPrint" title="인쇄">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      <!-- 인쇄 -->
+      <button class="btn-icon btn-icon-primary" id="btnPrint" title="인쇄 / PDF 저장">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>
+        </svg>
       </button>
     </div>
   </div>
@@ -111,18 +148,15 @@
     <div class="empty-text">비교표가 비어 있습니다.<br>학비계산기에서 <strong>학비 비교 +</strong>를 눌러 추가하세요.</div>
   </div>
 
-  <div class="row" id="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;"></div>
-
+  <div id="cards"></div>
 </div>
 
 <script>
 "use strict";
 const KEY = "tuition_compares_v2";
 const fmtN = n => Math.round(Number(n)||0).toLocaleString("en-US");
-
 function load(){ try{ const r=localStorage.getItem(KEY); const a=r?JSON.parse(r):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function save(a){ try{ localStorage.setItem(KEY,JSON.stringify(a)); }catch(e){} }
-
 let _lastSig = "";
 function sig(a){ try{ return JSON.stringify(a||[]); }catch(e){ return ""; } }
 
@@ -130,128 +164,125 @@ function applyBranding(member) {
   if (!member) return;
   const p = member.primaryColor || "#2563eb";
   document.documentElement.style.setProperty("--p", p);
-  // p-light: 15% opacity version
   document.documentElement.style.setProperty("--p-light", p + "18");
-  if (member.logoUrl) document.getElementById("brandLogo").innerHTML = `<img src="${member.logoUrl}" alt="로고">`;
-  document.getElementById("brandCompany").textContent = member.companyName || "학비 비교표";
-  document.getElementById("brandCompany").style.color = p;
+  const logo = document.getElementById("brandLogo");
+  if (member.logoUrl) logo.innerHTML = `<img src="${member.logoUrl}" alt="로고" onerror="this.style.display='none'">`;
+  const comp = document.getElementById("brandCompany");
+  comp.textContent = member.companyName || "학비 비교표";
+  comp.style.color = p;
   document.getElementById("brandSlogan").textContent = member.slogan || "";
-  const consultant = [member.consultantName, member.consultantPhone].filter(Boolean).join("  |  ");
-  document.getElementById("brandConsultant").textContent = consultant ? `담당: ${consultant}` : "";
+  const c = [member.consultantName, member.consultantPhone].filter(Boolean).join("  |  ");
+  document.getElementById("brandConsultant").textContent = c ? `담당: ${c}` : "";
+}
+
+function rowLines(lines) {
+  return (lines.length ? lines : [{left:"-",right:""}])
+    .map(r=>`<div class="rowline"><div class="left">${r.left}</div><div class="right">${r.right}</div></div>`)
+    .join("");
 }
 
 function render() {
-  const arr = load().slice(0, 3);
+  const arr = load().slice(0,3);
   const cards = document.getElementById("cards");
-  const emptyState = document.getElementById("emptyState");
+  const empty = document.getElementById("emptyState");
   cards.innerHTML = "";
   document.getElementById("countLabel").textContent = arr.length;
 
-  // 첫 번째 항목에서 브랜딩 정보 가져오기
   if (arr.length && arr[0].member) applyBranding(arr[0].member);
 
-  if (!arr.length) { emptyState.style.display = "block"; cards.style.display = "none"; return; }
-  emptyState.style.display = "none"; cards.style.display = "grid";
+  if (!arr.length) { empty.style.display="block"; cards.style.display="none"; return; }
+  empty.style.display="none"; cards.style.display="grid";
 
   arr.forEach((x, idx) => {
-    const col = document.createElement("div");
-    const courseLines = (x.courses||[]).map(c => ({ left:`${c.label}: ${c.name} (${c.weeks}주)`, right:`${fmtN(c.cost)}원` }));
-    const dormLines   = (x.dorms||[]).map(d => ({ left:`${d.label}: ${d.name} (${d.weeks}주)`, right:`${fmtN(d.cost)}원` }));
-    const discLines   = (x.discountItems||[]).map(d => ({ left:d.name, right:`${fmtN(d.amount)}원` }));
+    const courseLines = (x.courses||[]).map(c=>({left:`${c.label}: ${c.name} (${c.weeks}주)`,right:`${fmtN(c.cost)}원`}));
+    const dormLines   = (x.dorms||[]).map(d=>({left:`${d.label}: ${d.name} (${d.weeks}주)`,right:`${fmtN(d.cost)}원`}));
+    const discLines   = (x.discountItems||[]).map(d=>({left:d.name,right:`${fmtN(d.amount)}원`}));
     const manualDisc  = Number(x.manual_discount_krw||0);
     const payFinal    = Math.max(0, Number(x.pay||0) - manualDisc);
-    const localPhp    = Number(x.localPhpTotal||0), localKrw = Number(x.localKrwTotal||0), rate = Number(x.rate||0);
+    const localPhp    = Number(x.localPhpTotal||0);
+    const localKrw    = Number(x.localKrwTotal||0);
+    const rate        = Number(x.rate||0);
 
-    function rowLines(lines) {
-      return (lines.length ? lines : [{left:"-",right:""}]).map(r => `
-        <div class="rowline"><div class="left">${r.left}</div><div class="right">${r.right}</div></div>`).join("");
-    }
-
-    col.innerHTML = `
+    const wrap = document.createElement("div");
+    wrap.className = "card-wrap";
+    wrap.innerHTML = `
+      <button class="del-btn no-print" data-del="${idx}" title="삭제">×</button>
       <div class="card">
         <div class="card-body">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-            <div>
-              <div class="school-name">${x.schoolName||"—"}</div>
-              <div class="school-weeks mono">${x.totalWeeks||0}주 과정</div>
-            </div>
-            <button class="btn btn-danger-outline no-print" style="font-size:.78rem;padding:4px 10px;" data-del="${idx}">삭제</button>
+          <div style="margin-bottom:12px;">
+            <div class="school-name">${x.schoolName||"—"}</div>
+            <div class="school-weeks mono">${x.totalWeeks||0}주 과정</div>
           </div>
 
           <div class="section">
-            <div class="rowline"><div class="left muted">입학금</div><div class="right mono" style="font-weight:700;">${fmtN(x.admissionFee||0)}원</div></div>
+            <div class="rowline"><div class="left">입학금</div><div class="right mono">${fmtN(x.admissionFee||0)}원</div></div>
           </div>
 
           <div class="section">
             <div class="section-title">📚 코스</div>
             <div class="mono">${rowLines(courseLines)}</div>
-            <div class="rowline" style="margin-top:6px;"><div class="left muted">합계</div><div class="right mono" style="font-weight:700;">${fmtN(x.courseTotal||0)}원</div></div>
+            <div class="divider" style="margin:6px 0;"></div>
+            <div class="rowline"><div class="left">합계</div><div class="right mono">${fmtN(x.courseTotal||0)}원</div></div>
           </div>
 
           <div class="section">
             <div class="section-title">🏠 기숙사</div>
             <div class="mono">${rowLines(dormLines)}</div>
-            <div class="rowline" style="margin-top:6px;"><div class="left muted">합계</div><div class="right mono" style="font-weight:700;">${fmtN(x.dormTotal||0)}원</div></div>
+            <div class="divider" style="margin:6px 0;"></div>
+            <div class="rowline"><div class="left">합계</div><div class="right mono">${fmtN(x.dormTotal||0)}원</div></div>
           </div>
 
           <div class="section">
             <div class="section-title">🏷️ 할인</div>
             <div class="mono">${rowLines(discLines)}</div>
-            <div class="rowline" style="margin-top:6px;"><div class="left muted">할인 합계</div><div class="right mono" style="font-weight:700;color:#dc2626;">${fmtN(x.discountTotal||0)}원</div></div>
-            <div class="rowline no-print" style="margin-top:8px;align-items:center;">
-              <div class="left muted">추가 할인 입력</div>
-              <div class="right"><input class="manual-disc" data-md="${idx}" type="text" inputmode="numeric" value="${manualDisc ? fmtN(manualDisc) : ""}" placeholder="0"></div>
+            <div class="divider" style="margin:6px 0;"></div>
+            <div class="rowline"><div class="left">할인 합계</div><div class="right mono" style="color:#dc2626;">${fmtN(x.discountTotal||0)}원</div></div>
+            <div class="rowline no-print" style="margin-top:6px;align-items:center;">
+              <div class="left">추가 할인</div>
+              <div class="right"><input class="manual-disc" data-md="${idx}" type="text" inputmode="numeric" value="${manualDisc?fmtN(manualDisc):""}" placeholder="0"></div>
             </div>
           </div>
 
           <div class="spacer"></div>
 
-          <div class="final-card" style="margin-top:auto;">
+          <div class="final-card">
             <div class="final-amount mono">${fmtN(payFinal)}원</div>
-            <div class="divider" style="margin:10px 0;"></div>
-            <div class="section-title" style="margin-bottom:6px;">🌏 현지납부</div>
-            <div class="mono" style="font-size:.84rem;">${fmtN(localPhp)} 페소 <span class="muted">(${fmtN(localKrw)}원)</span></div>
+            <div class="divider" style="margin:8px 0;"></div>
+            <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:5px;">🌏 현지납부</div>
+            <div class="mono" style="font-size:.8rem;">${fmtN(localPhp)} 페소 <span class="muted">(${fmtN(localKrw)}원)</span></div>
             <div class="final-sub">환율: 1페소 = ${fmtN(rate)}원</div>
-            <div class="final-sub" style="margin-top:4px;">견적일: ${x.quoteDate||"—"}</div>
+            <div class="final-sub" style="margin-top:3px;">견적일: ${x.quoteDate||"—"}</div>
           </div>
-
         </div>
       </div>`;
-    cards.appendChild(col);
+    cards.appendChild(wrap);
   });
 
   cards.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const i = Number(btn.dataset.del), a = load(); a.splice(i, 1); save(a); _lastSig = sig(load()); render();
+      const i=Number(btn.dataset.del), a=load(); a.splice(i,1); save(a); _lastSig=sig(load()); render();
     });
   });
-
   cards.querySelectorAll("input[data-md]").forEach(inp => {
     inp.addEventListener("input", () => {
-      const digits = inp.value.replace(/\D/g,"");
-      inp.value = digits ? Number(digits).toLocaleString("en-US") : "";
-      const i = Number(inp.dataset.md), a = load();
-      if (a[i]) { a[i].manual_discount_krw = digits ? Number(digits) : 0; save(a); _lastSig = sig(load()); }
+      const d=inp.value.replace(/\D/g,"");
+      inp.value=d?Number(d).toLocaleString("en-US"):"";
+      const i=Number(inp.dataset.md),a=load();
+      if(a[i]){ a[i].manual_discount_krw=d?Number(d):0; save(a); _lastSig=sig(load()); }
     });
     inp.addEventListener("blur", render);
   });
 }
 
-function startAutoSync() {
-  setInterval(() => { const s = sig(load()); if (s !== _lastSig) { _lastSig = s; render(); } }, 500);
-}
+function startAutoSync() { setInterval(()=>{ const s=sig(load()); if(s!==_lastSig){ _lastSig=s; render(); } }, 500); }
 
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
-document.getElementById("btnClear").addEventListener("click", () => { save([]); _lastSig = sig(load()); render(); });
+document.getElementById("btnClear").addEventListener("click", () => {
+  if (!confirm("비교표를 모두 초기화하시겠습니까?")) return;
+  save([]); _lastSig=sig(load()); render();
+});
 
-// 인쇄 스케일 조정
-const PRINT_W = 1060, PRINT_H = 730;
-function applyPrintScale() { const w = document.getElementById("wrap"); if (!w) return; w.style.transformOrigin = "top left"; w.style.transform = ""; const s = Math.min(1, PRINT_W/w.scrollWidth, PRINT_H/w.scrollHeight); if (s < 1) w.style.transform = `scale(${s.toFixed(4)})`; }
-function clearPrintScale() { const w = document.getElementById("wrap"); if (w) { w.style.transform = ""; w.style.transformOrigin = ""; } }
-window.addEventListener("beforeprint", applyPrintScale);
-window.addEventListener("afterprint", clearPrintScale);
-
-_lastSig = sig(load()); startAutoSync(); render();
+_lastSig=sig(load()); startAutoSync(); render();
 </script>
 </body>
 </html>
