@@ -393,6 +393,18 @@ $("btnSaveSettings").addEventListener("click", async () => {
 });
 
 $("btnLogout").addEventListener("click", () => signOut(auth).then(() => window.location.href = "auth.html"));
+
+// ── 연락처 자동 하이픈 포맷 ──
+function formatPhone(input) {
+  input.addEventListener("input", () => {
+    let v = input.value.replace(/\D/g, "").slice(0, 11);
+    if (v.length < 4)       input.value = v;
+    else if (v.length < 7)  input.value = v.slice(0,3) + "-" + v.slice(3);
+    else if (v.length < 11) input.value = v.slice(0,3) + "-" + v.slice(3,6) + "-" + v.slice(6);
+    else                    input.value = v.slice(0,3) + "-" + v.slice(3,7) + "-" + v.slice(7);
+  });
+}
+formatPhone($("setConsultantPhone"));
 </script>
 </body>
 </html>
